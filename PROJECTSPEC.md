@@ -155,7 +155,7 @@ Health
 GET    /api/health/
 ```
 
-`GET /api/applications/` searches job title and company name, filters by an applied-date range, and returns one page at a time.
+`GET /api/applications/` searches job title and company name, filters by an applied-date range and by one status, and returns one page at a time.
 
 `GET /api/dashboard/` returns the signed-in user's count for each status, including zero, and that user's upcoming interviews. An interview is upcoming when its date and time are in the future and its outcome is `SCHEDULED`. Each item includes the job title, company name, date and time, type, and application id.
 
@@ -169,6 +169,7 @@ Permissions tie each record to the user who owns it. One user cannot read or cha
 
 Build these screens in React and TypeScript:
 
+- Landing
 - Login
 - Register
 - Dashboard
@@ -179,11 +180,17 @@ Build these screens in React and TypeScript:
 
 Interviews and notes are sections on the application detail screen. Companies are chosen or created on the application form. Account actions are register, login, and log out.
 
-There is no sidebar and no top bar that stays on screen. The dashboard links to the application list, the create screen, and log out. Every other signed-in screen links back to the dashboard. The application list also links to the create screen.
+There is no sidebar, and no bar that stays on every signed-in screen. The landing page is the only screen with a top bar. The dashboard links to the application list, the create screen, and log out. The application list links to the create screen. Create and edit link back to the dashboard.
 
-A signed-out visitor to any screen other than login and register is sent to login. A signed-in visitor to login or register is sent to the dashboard. Login and registration both land on the dashboard. The session survives a refresh until the token expires or the user logs out. Log out clears the session and opens login.
+A signed-out visitor to any screen other than the landing page, login, and register is sent to login. A signed-in visitor to the landing page, login, or register is sent to the dashboard. Login and registration both land on the dashboard. The session survives a refresh until the token expires or the user logs out. Log out clears the session and opens the landing page.
 
 Each screen calls the API and shows the result. Stop frontend work once those screens work.
+
+### Landing
+
+The landing page is `/`. It is the first screen for a signed-out visitor, including after log out.
+
+The top bar shows Applications Tracker on the left and Login and Register on the right. The page uses the same type and colors as the other screens. It has a short headline and one sentence about tracking applications.
 
 ### Login and register
 
@@ -195,15 +202,19 @@ Login collects email and password. When they do not match an account, the screen
 
 The dashboard shows a count for each status, a list of upcoming interviews, a link to the application list, a link to create an application, and log out.
 
+Each status count is a card. The card opens `/applications` limited to that status, including a card whose count is zero. All applications opens `/applications` with no status limit.
+
 Each upcoming interview shows the job title, company, date and time, and type, and links to that application. The counts and the interview list come from `GET /api/dashboard/`.
 
 ### Application list
 
-The list is a table. Columns are job title, company, status, date applied, and next interview. Next interview is the soonest upcoming interview for that application. The cell is empty when there is none. A row opens the detail screen.
+The list is a table. Columns are job title, company, status, date applied, and next interview. Next interview is the soonest upcoming interview for that application. The cell is empty when there is none. The rest of a row opens the detail screen.
 
-The user can search by job title and company name and can filter by an applied-date range. Applications with no applied date are shown when the range is empty, and hidden when a range is set.
+The status badge opens a menu of the seven statuses. Choosing one updates that application immediately through `PATCH /api/applications/{id}/`. If the open list is limited to one status and the new status does not match, the row leaves the list.
 
-The table requests one page at a time and shows next and previous when another page exists.
+The user can search by job title and company name, filter by an applied-date range, and filter by one status. Applications with no applied date are shown when the range is empty, and hidden when a range is set.
+
+The table requests one page at a time and shows next and previous when another page exists. Search, the applied-date range, the status, and the page stay in the list address. Opening a detail screen and coming back shows that same list.
 
 ### Create and edit
 
@@ -213,13 +224,20 @@ Required fields are job title, company, location, and status. Optional fields ar
 
 The company control lists that user's companies and accepts a new name. Submitting a new name creates the company, then creates or updates the application. If the name already belongs to that user, the form uses the existing company.
 
-A successful create opens the new detail screen. A successful edit returns to the detail screen.
+A successful create opens the new detail screen. A successful edit returns to the detail screen. Both screens link back to the dashboard.
 
 ### Application detail
 
-The detail route is `/applications/{id}`. The page shows the application fields, then interviews, then notes.
+The detail route is `/applications/{id}`. The page shows the application fields, then interviews, then notes. Status on this screen is a label.
 
-The application section links to edit. Delete asks for confirmation, then removes the application and opens the list.
+The page keeps the address it was opened from, and Back uses that address. The back label names that previous screen.
+
+- From All applications, Back returns to that list with the same search, dates, and page. The label is All applications.
+- From a status card, Back returns to that filtered list with the same search, dates, and page. The label is the status name.
+- From an upcoming interview on the dashboard, Back returns to the dashboard. The label is Dashboard.
+- A detail address opened on its own goes back to `/applications` with no filters. The label is All applications.
+
+The application section links to edit. Delete asks for confirmation, then removes the application and opens that same previous list. A detail address opened on its own opens `/applications` after delete.
 
 The interviews section lists interviews and can add or delete one. It cannot edit one. Required fields are date and time, type, and outcome. Optional fields are round name and interviewer name. The add form starts with outcome `SCHEDULED`.
 
@@ -253,6 +271,7 @@ Cover at least these cases:
 - Create, update, and delete for notes
 - Search by job title and company name
 - Filter by applied date
+- Filter by one status
 - Pagination
 - Dashboard counts and upcoming interviews
 - Invalid input
