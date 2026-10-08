@@ -1,7 +1,7 @@
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import BackLink from '../components/BackLink'
-import StatusBadge from '../components/StatusBadge'
+import StatusMenu from '../components/StatusMenu'
 import {
   applications,
   companyName,
@@ -9,15 +9,42 @@ import {
   formatDateTime,
   nextInterview,
 } from '../mockData'
+import { label, STATUSES, type Status } from '../types'
 
 const PAGE_SIZE = 5
 
+type ListParam = 'q' | 'from' | 'to' | 'status' | 'page'
+
 export default function ApplicationList() {
   const navigate = useNavigate()
-  const [search, setSearch] = useState('')
-  const [from, setFrom] = useState('')
-  const [to, setTo] = useState('')
-  const [page, setPage] = useState(1)
+  const location = useLocation()
+  const [params, setParams] = useSearchParams()
+  // Re-render after a status change. The mock record is mutated in place.
+  const [, bump] = useState(0)
+
+  // Search, dates, status, and page live in the address so Back from detail restores them.
+  const search = params.get('q') ?? ''
+  const from = params.get('from') ?? ''
+  const to = params.get('to') ?? ''
+  const statusParam = params.get('status')
+  const status = STATUSES.includes(statusParam as Status) ? (statusParam as Status) : ''
+  const page = Math.max(1, Number(params.get('page')) || 1)
+
+  /** Set or clear params. Changing any filter returns to page 1. */
+  const update = (patch: Partial<Record<ListParam, string>>, replace = false) => {
+    setParams(
+      (prev) => {
+        const next = new URLSearchParams(prev)
+        if (!('page' in patch)) next.delete('page')
+        for (const [key, value] of Object.entries(patch)) {
+          if (value) next.set(key, value)
+          else next.delete(key)
+        }
+        return next
+      },
+      { replace },
+    )
+  }
 
   // Client-side stand-in for the server's search, filter, and pagination.
   const q = search.trim().toLowerCase()
@@ -31,6 +58,7 @@ export default function ApplicationList() {
       if (from && a.dateApplied < from) return false
       if (to && a.dateApplied > to) return false
     }
+    if (status && a.status !== status) return false
     return true
   })
 
@@ -38,16 +66,18 @@ export default function ApplicationList() {
   const current = Math.min(page, pageCount)
   const rows = filtered.slice((current - 1) * PAGE_SIZE, current * PAGE_SIZE)
 
-  const resetPage = <T,>(setter: (v: T) => void) => (v: T) => {
-    setter(v)
-    setPage(1)
+  const changeStatus = (id: number, next: Status) => {
+    // Mock: stands in for PATCH /api/applications/{id}/ with { status }.
+    const app = applications.find((a) => a.id === id)
+    if (app) app.status = next
+    bump((n) => n + 1)
   }
 
   return (
     <main className="page">
       <BackLink />
       <header className="page-header">
-        <h1>Applications</h1>
+        <h1>{status ? label(status) : 'All applications'}</h1>
         <Link to="/applications/new" className="btn btn-primary">
           + New application
         </Link>
@@ -60,26 +90,30 @@ export default function ApplicationList() {
             type="search"
             placeholder="Job title or company"
             value={search}
-            onChange={(e) => resetPage(setSearch)(e.target.value)}
+            onChange={(e) => update({ q: e.target.value }, true)}
           />
         </label>
         <label className="field">
+          <span>Status</span>
+          <select value={status} onChange={(e) => update({ status: e.target.value })}>
+            <option value="">All statuses</option>
+            {STATUSES.map((s) => (
+              <option key={s} value={s}>
+                {label(s)}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="field">
           <span>Applied from</span>
-          <input type="date" value={from} onChange={(e) => resetPage(setFrom)(e.target.value)} />
+          <input type="date" value={from} onChange={(e) => update({ from: e.target.value })} />
         </label>
         <label className="field">
           <span>Applied to</span>
-          <input type="date" value={to} onChange={(e) => resetPage(setTo)(e.target.value)} />
+          <input type="date" value={to} onChange={(e) => update({ to: e.target.value })} />
         </label>
         {rangeSet && (
-          <button
-            className="btn btn-ghost"
-            onClick={() => {
-              setFrom('')
-              setTo('')
-              setPage(1)
-            }}
-          >
+          <button className="btn btn-ghost" onClick={() => update({ from: '', to: '' })}>
             Clear dates
           </button>
         )}
@@ -107,13 +141,21 @@ export default function ApplicationList() {
               rows.map((a) => {
                 const next = nextInterview(a.id)
                 return (
-                  <tr key={a.id} className="clickable" onClick={() => navigate(`/applications/${a.id}`)}>
+                  <tr
+                    key={a.id}
+                    className="clickable"
+                    onClick={() =>
+                      navigate(`/applications/${a.id}`, {
+                        state: { from: location.pathname + location.search },
+                      })
+                    }
+                  >
                     <td>
                       <strong>{a.jobTitle}</strong>
                     </td>
                     <td>{companyName(a.companyId)}</td>
                     <td>
-                      <StatusBadge status={a.status} />
+                      <StatusMenu status={a.status} onChange={(s) => changeStatus(a.id, s)} />
                     </td>
                     <td>{a.dateApplied ? formatDate(a.dateApplied) : ''}</td>
                     <td>{next ? formatDateTime(next.scheduledAt) : ''}</td>
@@ -127,13 +169,21 @@ export default function ApplicationList() {
 
       {pageCount > 1 && (
         <div className="pager">
-          <button className="btn" disabled={current === 1} onClick={() => setPage(current - 1)}>
+          <button
+            className="btn"
+            disabled={current === 1}
+            onClick={() => update({ page: current - 1 > 1 ? String(current - 1) : '' })}
+          >
             ← Previous
           </button>
           <span className="muted">
             Page {current} of {pageCount}
           </span>
-          <button className="btn" disabled={current === pageCount} onClick={() => setPage(current + 1)}>
+          <button
+            className="btn"
+            disabled={current === pageCount}
+            onClick={() => update({ page: String(current + 1) })}
+          >
             Next →
           </button>
         </div>

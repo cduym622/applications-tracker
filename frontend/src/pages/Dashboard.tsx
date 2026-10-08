@@ -1,4 +1,5 @@
-import { Link } from 'react-router-dom'
+import { startTransition } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../auth'
 import StatusBadge from '../components/StatusBadge'
 import { applications, companyName, formatDateTime, interviews, isUpcoming } from '../mockData'
@@ -6,6 +7,16 @@ import { label, STATUSES } from '../types'
 
 export default function Dashboard() {
   const { signOut } = useAuth()
+  const navigate = useNavigate()
+
+  // The router applies navigation in a transition. Sign out in the same
+  // transition so the guard never sees a signed-out user on /dashboard.
+  const logOut = () => {
+    startTransition(() => {
+      navigate('/', { replace: true })
+      signOut()
+    })
+  }
 
   const counts = STATUSES.map((status) => ({
     status,
@@ -28,7 +39,7 @@ export default function Dashboard() {
           <Link to="/applications/new" className="btn btn-primary">
             + New application
           </Link>
-          <button className="btn btn-ghost" onClick={signOut}>
+          <button className="btn btn-ghost" onClick={logOut}>
             Log out
           </button>
         </div>
@@ -38,10 +49,10 @@ export default function Dashboard() {
         <h2>Applications by status</h2>
         <div className="count-grid">
           {counts.map(({ status, count }) => (
-            <div key={status} className="count-card">
+            <Link key={status} to={`/applications?status=${status}`} className="count-card">
               <div className="count-value">{count}</div>
               <StatusBadge status={status} />
-            </div>
+            </Link>
           ))}
         </div>
       </section>
@@ -54,7 +65,7 @@ export default function Dashboard() {
           <ul className="card list">
             {upcoming.map(({ interview, app }) => (
               <li key={interview.id}>
-                <Link to={`/applications/${app.id}`} className="list-row">
+                <Link to={`/applications/${app.id}`} state={{ from: '/dashboard' }} className="list-row">
                   <div>
                     <strong>{app.jobTitle}</strong>
                     <div className="muted">{companyName(app.companyId)}</div>

@@ -1,5 +1,6 @@
 import { Navigate, Outlet, Route, Routes } from 'react-router-dom'
 import { useAuth } from './auth'
+import Landing from './pages/Landing'
 import Login from './pages/Login'
 import Register from './pages/Register'
 import Dashboard from './pages/Dashboard'
@@ -22,6 +23,7 @@ export default function App() {
   return (
     <Routes>
       <Route element={<RedirectIfAuthed />}>
+        <Route path="/" element={<Landing />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
       </Route>
@@ -32,7 +34,7 @@ export default function App() {
         <Route path="/applications/:id" element={<ApplicationDetail />} />
         <Route path="/applications/:id/edit" element={<ApplicationEdit />} />
       </Route>
-      <Route path="*" element={<Navigate to="/dashboard" replace />} />
+      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   )
 }

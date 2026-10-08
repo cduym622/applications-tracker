@@ -187,6 +187,16 @@ export const notes: Note[] = [
   },
 ]
 
+/** Stands in for DELETE /api/applications/{id}/: removes its interviews and notes too, keeps the company. */
+export function deleteApplication(id: number): void {
+  const remove = <T,>(list: T[], match: (item: T) => boolean) => {
+    for (let i = list.length - 1; i >= 0; i--) if (match(list[i])) list.splice(i, 1)
+  }
+  remove(applications, (a) => a.id === id)
+  remove(interviews, (i) => i.applicationId === id)
+  remove(notes, (n) => n.applicationId === id)
+}
+
 export function companyName(companyId: number): string {
   return companies.find((c) => c.id === companyId)?.name ?? 'Unknown'
 }

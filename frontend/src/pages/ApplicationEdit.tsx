@@ -1,10 +1,12 @@
-import { useNavigate, useParams } from 'react-router-dom'
+import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import ApplicationForm from '../components/ApplicationForm'
 import BackLink from '../components/BackLink'
 import { applications, companyName } from '../mockData'
 
 export default function ApplicationEdit() {
   const navigate = useNavigate()
+  // Carry the detail screen's origin through edit so its Back still works.
+  const { state } = useLocation()
   const id = Number(useParams().id)
   const app = applications.find((a) => a.id === id)
 
@@ -36,8 +38,8 @@ export default function ApplicationEdit() {
         }}
         submitLabel="Save changes"
         // Mock: no save. Returns to the detail screen.
-        onSubmit={() => navigate(`/applications/${app.id}`)}
-        onCancel={() => navigate(`/applications/${app.id}`)}
+        onSubmit={() => navigate(`/applications/${app.id}`, { state })}
+        onCancel={() => navigate(`/applications/${app.id}`, { state })}
       />
     </main>
   )

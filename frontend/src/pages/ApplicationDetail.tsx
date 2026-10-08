@@ -1,10 +1,11 @@
 import { useState, type FormEvent } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
-import BackLink from '../components/BackLink'
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
+import BackLink, { useBackTarget } from '../components/BackLink'
 import StatusBadge from '../components/StatusBadge'
 import {
   applications,
   companyName,
+  deleteApplication,
   formatDate,
   formatDateTime,
   interviews as allInterviews,
@@ -22,6 +23,8 @@ import {
 
 export default function ApplicationDetail() {
   const navigate = useNavigate()
+  const location = useLocation()
+  const back = useBackTarget()
   const id = Number(useParams().id)
   const app = applications.find((a) => a.id === id)
 
@@ -36,7 +39,7 @@ export default function ApplicationDetail() {
   if (!app) {
     return (
       <main className="page">
-        <BackLink />
+        <BackLink to={back.to} label={back.label} />
         <p className="card">Application not found.</p>
       </main>
     )
@@ -44,13 +47,15 @@ export default function ApplicationDetail() {
 
   const handleDelete = () => {
     if (confirm('Delete this application? Its interviews and notes will be deleted too.')) {
-      navigate('/applications')
+      // Mock: removes the record until refresh.
+      deleteApplication(app.id)
+      navigate(back.to)
     }
   }
 
   return (
     <main className="page narrow">
-      <BackLink />
+      <BackLink to={back.to} label={back.label} />
 
       <section className="card">
         <div className="section-header">
@@ -61,7 +66,7 @@ export default function ApplicationDetail() {
             </p>
           </div>
           <div className="actions">
-            <Link to={`/applications/${app.id}/edit`} className="btn">
+            <Link to={`/applications/${app.id}/edit`} state={location.state} className="btn">
               Edit
             </Link>
             <button className="btn btn-danger" onClick={handleDelete}>
