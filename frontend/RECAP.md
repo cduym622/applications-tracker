@@ -2,7 +2,7 @@
 
 ## What this is
 
-This folder holds clickable UI frames for the eight screens described in `PROJECTDESCRIPTION.md` and `PROJECTSPEC.md`. They let you see how the app looks and moves between screens. Nothing calls a backend. Every screen reads from a static mock file.
+This folder holds clickable UI frames for the eight screens described in `docs/PROJECTDESCRIPTION.md` and `docs/PROJECTSPEC.md`. They let you see how the app looks and moves between screens. Nothing calls a backend. Every screen reads from a static mock file.
 
 The stack is Vite, React 19, TypeScript, and react-router-dom 7. Styling is plain CSS in one file. There are no other dependencies, because the spec says to add a technology only when a requirement needs it.
 
@@ -96,7 +96,7 @@ frontend/
 1. Replace `mockData.ts` with an API client that calls the endpoints in `PROJECTSPEC.md`.
 2. Change `auth.tsx` to store the JWT from `/api/auth/login/`, send it on each request, and sign out when it expires. Keep log out's navigation and sign-out in the same transition, as described above.
 3. Send search, the date range, the status, and the page number to `GET /api/applications/` as query parameters, and drop the in-browser filtering. Send status changes from the list badge to `PATCH /api/applications/{id}/`.
-4. On submit, if the company name is new, call `POST /api/companies/` before creating or updating the application.
-5. Keep `types.ts`. Field names may need mapping if the API returns snake_case.
+4. On submit, send the company name as `company_name` with the application. The server finds or creates the company in the same transaction. There is no `POST /api/companies/`.
+5. Update `types.ts` to match `docs/api.md`. `Application` gets `company: {id, name}`, `nextInterview`, `createdAt`, and `updatedAt` in place of `companyId`. `Interview` and `Note` drop `applicationId`. Optional fields become `| null`. Map snake_case to camelCase in the API client.
 6. Remove the demo error triggers in `Login.tsx` and `Register.tsx` and show the errors the API returns.
 7. Add the frontend to Docker Compose in Phase 5.

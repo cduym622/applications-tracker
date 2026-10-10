@@ -25,6 +25,8 @@ Build only the screens in the Frontend section. Use the rest of the time on the 
 - Amazon ECR for the container registry
 - ECS on Fargate to run the backend
 - RDS for PostgreSQL
+- Amazon S3 for the frontend build
+- Amazon CloudFront as the public site
 - CloudWatch for logs and metrics
 - OpenAPI and Swagger UI for API documentation
 - Git and GitHub for version control
@@ -49,12 +51,12 @@ Relationships:
 - A job application has many interviews.
 - A job application has many notes.
 
-A company name is unique for one user. Two users may each have a company with the same name. Deleting an application does not delete its company.
+A company name is unique for one user, ignoring case. Two users may each have a company with the same name. Deleting an application does not delete its company.
 
 User fields:
 
 - Email, required and unique
-- Password, required, at least 8 characters, stored hashed
+- Password, required, at least 8 characters, not a common password, stored hashed
 
 Company fields:
 
@@ -109,7 +111,7 @@ FAILED
 CANCELLED
 ```
 
-An interview cannot be updated. To change one, the user deletes it and adds another. An interview has no note field of its own.
+Only an interview's outcome can be updated. To change any other field, the user deletes the interview and adds another. An interview has no note field of its own.
 
 Note fields:
 
@@ -138,11 +140,11 @@ DELETE /api/applications/{id}/
 
 Companies
 GET    /api/companies/
-POST   /api/companies/
 
 Interviews
 GET    /api/applications/{id}/interviews/
 POST   /api/applications/{id}/interviews/
+PATCH  /api/applications/{id}/interviews/{interview_id}/
 DELETE /api/applications/{id}/interviews/{interview_id}/
 
 Notes
@@ -153,15 +155,22 @@ DELETE /api/applications/{id}/notes/{note_id}/
 
 Health
 GET    /api/health/
+GET    /api/health/live/
 ```
 
 `GET /api/applications/` searches job title and company name, filters by an applied-date range and by one status, and returns one page at a time.
 
-`GET /api/dashboard/` returns the signed-in user's count for each status, including zero, and that user's upcoming interviews. An interview is upcoming when its date and time are in the future and its outcome is `SCHEDULED`. Each item includes the job title, company name, date and time, type, and application id.
+`GET /api/dashboard/` returns the signed-in user's count for each status, including zero, and that user's soonest 10 upcoming interviews. An interview is upcoming when its date and time are in the future and its outcome is `SCHEDULED`. Each item includes the job title, company name, date and time, type, and application id.
 
 `DELETE /api/applications/{id}/` also deletes that application's interviews and notes.
 
-Register accepts email and password. Login accepts email and password. A duplicate email and a password shorter than 8 characters are validation errors.
+`POST /api/applications/` and `PATCH /api/applications/{id}/` take a company name. The server uses the user's company with that name, or creates one, in the same transaction as the application. There is no endpoint that creates a company on its own.
+
+`status` and `outcome` are required on the stored record. The API fills `SAVED` and `SCHEDULED` when a create omits them.
+
+`PATCH` on an interview changes its outcome and nothing else.
+
+Register accepts email and password. Login accepts email and password. A duplicate email, a password shorter than 8 characters, and a common password are validation errors.
 
 Permissions tie each record to the user who owns it. One user cannot read or change another user's records. Dashboard counts and upcoming interviews follow the same rule.
 
@@ -194,13 +203,13 @@ The top bar shows Applications Tracker on the left and Login and Register on the
 
 ### Login and register
 
-Register collects email and password and shows a field error when the email is already registered or the password is shorter than 8 characters.
+Register collects email and password and shows a field error when the email is already registered, the password is shorter than 8 characters, or the password is a common one.
 
 Login collects email and password. When they do not match an account, the screen shows one error and does not say whether the email exists.
 
 ### Dashboard
 
-The dashboard shows a count for each status, a list of upcoming interviews, a link to the application list, a link to create an application, and log out.
+The dashboard shows a count for each status, a list of the soonest 10 upcoming interviews, a link to the application list, a link to create an application, and log out.
 
 Each status count is a card. The card opens `/applications` limited to that status, including a card whose count is zero. All applications opens `/applications` with no status limit.
 
@@ -222,7 +231,7 @@ Create is `/applications/new`. Edit is `/applications/{id}/edit`. Both forms use
 
 Required fields are job title, company, location, and status. Optional fields are salary, job posting URL, date applied, and description. The create form starts with status `SAVED`.
 
-The company control lists that user's companies and accepts a new name. Submitting a new name creates the company, then creates or updates the application. If the name already belongs to that user, the form uses the existing company.
+The company control lists that user's companies and accepts a new name. The form sends the name with the application. The server uses the existing company when the name matches one of the user's companies, ignoring case, and creates the company otherwise.
 
 A successful create opens the new detail screen. A successful edit returns to the detail screen. Both screens link back to the dashboard.
 
@@ -239,7 +248,7 @@ The page keeps the address it was opened from, and Back uses that address. The b
 
 The application section links to edit. Delete asks for confirmation, then removes the application and opens that same previous list. A detail address opened on its own opens `/applications` after delete.
 
-The interviews section lists interviews and can add or delete one. It cannot edit one. Required fields are date and time, type, and outcome. Optional fields are round name and interviewer name. The add form starts with outcome `SCHEDULED`.
+The interviews section lists interviews and can add or delete one. Each interview's outcome can be changed in place. No other interview field can be edited. Required fields are date and time, type, and outcome. Optional fields are round name and interviewer name. The add form starts with outcome `SCHEDULED`.
 
 The notes section lists notes and can add, edit, or delete one. Each note shows its text, the time it was created, and the time it was last changed after an edit.
 
@@ -264,10 +273,10 @@ Use pytest and pytest-django.
 
 Cover at least these cases:
 
-- Authentication, including a short password, a duplicate email, and a login that does not match
+- Authentication, including a short password, a common password, a duplicate email, and a login that does not match
 - Authorization
 - Create, read, update, and delete for applications
-- Add and delete for interviews, with no update path
+- Add and delete for interviews, an outcome update, and a rejected update to any other field
 - Create, update, and delete for notes
 - Search by job title and company name
 - Filter by applied date
@@ -296,6 +305,7 @@ On each pull request, GitHub Actions does the following:
 4. Run tests.
 5. Run lint and formatting checks.
 6. Build the Docker image.
+7. Build the frontend.
 
 A failed test or check fails the pull request.
 
@@ -308,10 +318,13 @@ Deployment runs in this order:
 3. Tests pass.
 4. The workflow builds a Docker image.
 5. The workflow pushes the image to Amazon ECR.
-6. ECS on Fargate runs the image.
-7. The backend uses RDS PostgreSQL.
+6. The workflow runs migrations against RDS PostgreSQL as a one-off ECS task with the new image. A failed migration stops the deploy.
+7. ECS on Fargate runs the new image.
+8. The workflow builds the frontend and uploads it to S3.
+9. The workflow invalidates `/index.html` in CloudFront.
+10. CloudFront serves that build, and forwards `/api` to the load balancer in front of ECS.
 
-A push to the release branch deploys the backend after CI passes. Name that branch in `/docs/architecture.md`.
+A push to `main` deploys the backend and the frontend after CI passes. `main` is the release branch. `/docs/architecture.md` records that choice and why S3 and CloudFront are required.
 
 ### Monitoring
 
@@ -323,7 +336,7 @@ Send these to CloudWatch:
 - ECS CPU and memory
 - Results from `GET /api/health/`
 
-`GET /api/health/` returns success when the backend can reach PostgreSQL. It returns an error when it cannot.
+`GET /api/health/` returns success when the backend can reach PostgreSQL. It returns an error when it cannot. The load balancer checks `GET /api/health/live/`, which does not query the database, so a database outage does not make ECS restart every task.
 
 ## Development phases
 
@@ -338,6 +351,8 @@ Write these files before you write implementation code:
 /docs/database.md
 /docs/api.md
 ```
+
+This file and PROJECTDESCRIPTION.md also live in `/docs`. Changes to the Phase 1 docs are logged in `/docs/PHASE1DOCSCHANGES.md`.
 
 `architecture.md` names the services, how they connect, and the repository layout. `database.md` defines the schema. `api.md` defines the API contract.
 
@@ -365,11 +380,11 @@ Add the GitHub Actions workflow from the CI section.
 
 ### Phase 7. AWS
 
-Deploy the backend image to ECS on Fargate, PostgreSQL to RDS, and images to ECR.
+Deploy the backend image to ECS on Fargate, PostgreSQL to RDS, images to ECR, and the frontend build to S3 behind CloudFront.
 
 ### Phase 8. CD
 
-Connect GitHub Actions to AWS. A passing build on the release branch deploys the backend.
+Connect GitHub Actions to AWS. A passing build on `main` deploys the backend and the frontend.
 
 ### Phase 9. Monitoring
 
@@ -396,13 +411,13 @@ Trigger failures on purpose, including a down database and a failed deploy. Fix 
 
 The finished repo has:
 
-- `architecture.md`, `database.md`, and `api.md`
+- `/docs` with `architecture.md`, `database.md`, `api.md`, this spec, and PROJECTDESCRIPTION.md
 - The Django REST API and PostgreSQL schema from this file
 - The React screens from the Frontend section
 - A pytest suite that covers the Testing section
 - Docker Compose for the frontend, backend, and PostgreSQL
 - GitHub Actions that fail a pull request when tests, lint, or the image build fail
-- A running deployment on ECS, RDS, and ECR
-- A GitHub Actions deploy from the release branch
+- A running deployment on ECS, RDS, ECR, S3, and CloudFront, with CloudFront as the public site
+- A GitHub Actions deploy of the backend and the frontend from `main`
 - CloudWatch logs and a health check that depends on PostgreSQL
 - A README that explains how to run the project locally and how deployment works

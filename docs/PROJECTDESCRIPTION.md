@@ -10,7 +10,7 @@ The first screen for a signed-out visitor is a public landing page. The same pag
 
 The landing page has a top bar. Applications Tracker is on the left. Login and Register are on the right. The rest of the page uses the same type and colors as the other screens. It has a short headline and one sentence about tracking applications.
 
-A visitor registers with an email and a password, or logs in with an email and a password. The password must be at least 8 characters. If the email is already registered, or the password is too short, the register screen shows the error on that field. If login does not match an account, the screen shows one error and does not say whether the email exists.
+A visitor registers with an email and a password, or logs in with an email and a password. The password must be at least 8 characters and must not be a common password. If the email is already registered, or the password is too short or too common, the register screen shows the error on that field. If login does not match an account, the screen shows one error and does not say whether the email exists.
 
 A successful login or registration opens the dashboard. A signed-in person who opens the landing page, login, or register is sent to the dashboard. A signed-out person who opens a signed-in screen is sent to login.
 
@@ -35,7 +35,7 @@ The dashboard is the first screen after sign-in, including after a refresh while
 
 It shows a count for each status: Saved, Applied, Screening, Interview, Offer, Rejected, and Withdrawn. A status with no applications still shows a count of zero. Each status card opens the application list limited to that status, including a card whose count is zero. All applications opens the list with no status limit.
 
-It lists upcoming interviews. An interview is upcoming when its date and time are still in the future and its outcome is Scheduled. Each row shows the job title, company, date and time, and interview type, and opens that application.
+It lists the soonest 10 upcoming interviews. An interview is upcoming when its date and time are still in the future and its outcome is Scheduled. Each row shows the job title, company, date and time, and interview type, and opens that application.
 
 ### Application list
 
@@ -57,7 +57,7 @@ One screen shows the application, then its interviews, then its notes.
 
 The application block shows every saved field, and status is a label. The block links to the edit screen. Delete asks for confirmation first. After confirmation, the application, its interviews, and its notes are removed, and the previous list opens. A detail address opened on its own sends the person to the full application list after delete. The company stays, so it can be chosen on a later application.
 
-From the interviews block, the person can add an interview or delete one. They cannot edit an interview. Changing an interview means deleting it and adding another. There is no separate interview screen.
+From the interviews block, the person can add an interview, change its outcome, or delete it. No other interview field can be edited. Changing the date, type, round, or interviewer means deleting the interview and adding another. There is no separate interview screen.
 
 From the notes block, the person can add a note, change its text, or delete it. There is no separate notes screen.
 
@@ -83,7 +83,7 @@ Optional:
 - Date applied
 - A short description written by the person
 
-Company is a choice of companies this person already has, or a new name. A new name creates a company for this person only. Two of this person's companies cannot share a name. The same name can exist for a different person. There is no company list screen and no company detail screen.
+Company is a choice of companies this person already has, or a new name. A new name creates a company for this person only, when the application is saved. Two of this person's companies cannot share a name, even with different capitals. A name that matches an existing company in any case uses that company. The same name can exist for a different person. There is no company list screen and no company detail screen.
 
 ### Interview fields
 
@@ -105,3 +105,7 @@ Comments about an interview are notes on the application.
 ### Note fields
 
 A note is text, the time it was added, and the time its text last changed. The created time stays fixed. The updated time changes when the text is edited.
+
+## Deployment
+
+These screens are the product both locally and in production. Docker Compose runs the frontend, the API, and the database on one machine. In production, Amazon CloudFront is the public site. It serves the built frontend from S3 and forwards `/api` to the API. Technologies and the rest of the deploy path are in PROJECTSPEC.md and architecture.md, both in this folder.
