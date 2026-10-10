@@ -352,7 +352,7 @@ Write these files before you write implementation code:
 /docs/api.md
 ```
 
-This file and PROJECTDESCRIPTION.md also live in `/docs`. Changes to the Phase 1 docs are logged in `/docs/PHASE1DOCSCHANGES.md`.
+This file and PROJECTDESCRIPTION.md also live in `/docs`. Changes to the Phase 1 docs are logged in `/docs/P1DOCSCHANGES.md`.
 
 `architecture.md` names the services, how they connect, and the repository layout. `database.md` defines the schema. `api.md` defines the API contract.
 

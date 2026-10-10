@@ -137,3 +137,5 @@ Deleting an application deletes its notes.
 - A job application has many notes.
 
 Foreign keys get PostgreSQL's usual indexes.
+
+Django 5.2 carries out "delete cascades" and "delete is protected" in the ORM. The foreign keys it creates in PostgreSQL have no `ON DELETE` action. A delete through Django cascades or is refused as described above. A raw SQL delete of a row that is still referenced fails instead of cascading.

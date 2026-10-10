@@ -61,8 +61,8 @@ CloudFront custom error responses (404 to `/index.html` with 200) are not used. 
 backend/                 Django project config and one app, tracker
 frontend/                React and TypeScript screens
 docs/                    PROJECTSPEC.md, PROJECTDESCRIPTION.md, architecture.md,
-                         database.md, api.md, PHASE1DOCSCHANGES.md,
-                         P2IMPLEMENTATIONMANUAL.md
+                         database.md, api.md, P1DOCSCHANGES.md,
+                         P2IMPLEMENTATIONMANUAL.md, P2DOCSCHANGES.md
 .github/workflows/       CI, then CD
 ```
 

@@ -18,7 +18,7 @@ Validation failures return 400 and an object of field names to lists of messages
 {"email": ["A user with this email already exists."]}
 ```
 
-A login that does not match an account returns 401 and one message, whether or not the email exists.
+A login that does not match an account returns 401 and one message, whether or not the email exists. A login body with a missing field or a malformed email is a 400 field error, like any other invalid input.
 
 ```json
 {"detail": "Email or password is incorrect."}
@@ -222,6 +222,8 @@ Body: `outcome`, required. Success is 200 and the interview object.
 
 Only `outcome` can change. A body with any other field is 400 on that field. To change the date, type, round, or interviewer, the user deletes the interview and adds another. `PUT` on this path returns 405.
 
+There is no `GET` for one interview. The list returns all of them. `GET` on this path returns 405.
+
 ### DELETE /api/applications/{id}/interviews/{interview_id}/
 
 Success is 204.
@@ -247,7 +249,9 @@ Body: `text`, required. Success is 201 and the note object.
 
 ### PATCH /api/applications/{id}/notes/{note_id}/
 
-Body: `text`. Success is 200 and the note object. `created_at` stays the same. `updated_at` changes.
+Body: `text`, required. Success is 200 and the note object. `created_at` stays the same. `updated_at` changes only when `text` differs from the stored text.
+
+There is no `GET` or `PUT` for one note. The list returns all of them. Both return 405 on this path.
 
 ### DELETE /api/applications/{id}/notes/{note_id}/
 
