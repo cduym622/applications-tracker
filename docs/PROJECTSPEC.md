@@ -366,6 +366,12 @@ Add models, migrations, serializers, views, authentication, permissions, filteri
 
 Add the tests listed in the Testing section before any deployment work.
 
+Run them with pytest and pytest-django against PostgreSQL. The tests read `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_HOST`, and `POSTGRES_PORT`, the same variables the API reads. Use the PostgreSQL server from Phase 2. pytest-django creates the test database and destroys it when the run finishes.
+
+Record the one command that starts that server locally. That command is not `docker compose up`. A single PostgreSQL container started only so the tests can connect belongs to this phase. Phase 5 is the frontend, backend, and database running together.
+
+Do not use SQLite. The tests cover PostgreSQL list order and constraints, including company names that differ only by case. The suite runs on the same engine as the API.
+
 ### Phase 4. Frontend
 
 Build the screens listed in the Frontend section.
