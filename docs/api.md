@@ -36,9 +36,11 @@ An expired or invalid token returns 401 with simplejwt's body. The client treats
 {
   "detail": "Given token not valid for any token type",
   "code": "token_not_valid",
-  "messages": [{"token_class": "AccessToken", "token_type": "access", "message": "Token is invalid or expired"}]
+  "messages": [{"token_class": "AccessToken", "token_type": "access", "message": "Token is expired"}]
 }
 ```
+
+That body is for an expired token. A token that is malformed or has a bad signature has the same body with `message` set to `Token is invalid`.
 
 A missing route, a missing record, or another user's record returns 404.
 

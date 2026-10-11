@@ -1,6 +1,6 @@
 # Backend
 
-Django and Django REST Framework API for the applications tracker. The API contract is in `../docs/api.md`, the schema in `../docs/database.md`, and the Phase 2 decisions in `../docs/P2IMPLEMENTATIONMANUAL.md`.
+Django and Django REST Framework API for the applications tracker. The API contract is in `../docs/api.md`, the schema in `../docs/database.md`, and the Phase 2 decisions in `../docs/Phase2-Docs/P2IMPLEMENTATIONMANUAL.md`. The test suite is described in `../docs/Phase3-Docs/P3IMPLEMENTATIONMANUAL.md`.
 
 These steps run the API directly on macOS with a local PostgreSQL. Docker Compose comes in Phase 5.
 
@@ -119,10 +119,27 @@ curl -s localhost:8000/api/dashboard/ -H "Authorization: Bearer <access>"
 
 In Swagger UI, click **Authorize** and paste the access token.
 
+## 6. Run the tests
+
+The suite uses pytest and pytest-django against the same Postgres.app server. `../docs/Phase3-Docs/P3IMPLEMENTATIONMANUAL.md` lists what it covers and why.
+
+From `backend/`, confirm the server is up, load the environment, and run pytest:
+
+```sh
+pg_isready -h localhost
+set -a; source .env; set +a
+pytest
+```
+
+pytest-django creates `test_<POSTGRES_DB>` on the server and drops it when the run finishes. The Postgres.app role is a superuser, so it can create that database. Tests live in `tracker/tests/`, one module per area, with shared fixtures in `conftest.py`.
+
+If `pg_isready` is not found, the Postgres.app tools are not on your `PATH` (step 3). Run `/Applications/Postgres.app/Contents/Versions/latest/bin/pg_isready -h localhost` instead.
+
 ## Useful commands
 
 | Command | What it does |
 | --- | --- |
+| `pytest` | Runs the test suite against Postgres.app. Load `.env` first. |
 | `python manage.py makemigrations` | Creates a migration after a model change. Commit it with the model change. |
 | `python manage.py makemigrations --check --dry-run` | Fails if a model change has no migration. |
 | `python manage.py migrate` | Applies migrations. |
@@ -145,6 +162,8 @@ tracker/
   filters.py       Application list query parameters and pagination
   urls.py          Routes, included at /api/
   migrations/
+  tests/           pytest suite: conftest.py fixtures and one module per area
+pytest.ini         Points pytest-django at config.settings
 ```
 
 ## How it behaves
@@ -169,4 +188,4 @@ These are the behaviors that are easy to miss. `api.md` and the manual have the 
 
 ## Not in this phase
 
-There are no tests (pytest is Phase 3), no Docker or gunicorn (Phase 5), no lint or CI (Phase 6), and no AWS (Phase 7).
+There is no Docker or gunicorn (Phase 5), no lint or CI (Phase 6), and no AWS (Phase 7).

@@ -61,12 +61,14 @@ CloudFront custom error responses (404 to `/index.html` with 200) are not used. 
 backend/                 Django project config and one app, tracker
 frontend/                React and TypeScript screens
 docs/                    PROJECTSPEC.md, PROJECTDESCRIPTION.md, architecture.md,
-                         database.md, api.md, P1DOCSCHANGES.md,
-                         P2IMPLEMENTATIONMANUAL.md, P2DOCSCHANGES.md
+                         database.md, api.md
+  Phase1-Docs/           P1DOCSCHANGES.md
+  Phase2-Docs/           P2IMPLEMENTATIONMANUAL.md, P2DOCSCHANGES.md
+  Phase3-Docs/           P3IMPLEMENTATIONMANUAL.md, P3DOCSCHANGES.md
 .github/workflows/       CI, then CD
 ```
 
-`tracker` holds models, serializers, views, permissions, and filters. The spec asks for those modules inside one Django project.
+`tracker` holds models, serializers, views, permissions, filters, and the pytest suite in `tracker/tests/`. The spec asks for those modules inside one Django project.
 
 ## Libraries beyond the spec
 
