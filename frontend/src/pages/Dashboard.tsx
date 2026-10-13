@@ -1,9 +1,10 @@
-import { startTransition } from 'react'
+import { startTransition, useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { errorText, getDashboard } from '../api'
 import { useAuth } from '../auth'
 import StatusBadge from '../components/StatusBadge'
-import { applications, companyName, formatDateTime, interviews, isUpcoming } from '../mockData'
-import { label, STATUSES } from '../types'
+import { formatDateTime } from '../format'
+import { label, STATUSES, type DashboardData } from '../types'
 
 export default function Dashboard() {
   const { signOut } = useAuth()
@@ -18,15 +19,19 @@ export default function Dashboard() {
     })
   }
 
-  const counts = STATUSES.map((status) => ({
-    status,
-    count: applications.filter((a) => a.status === status).length,
-  }))
+  const [data, setData] = useState<DashboardData | null>(null)
+  const [error, setError] = useState('')
 
-  const upcoming = interviews
-    .filter(isUpcoming)
-    .sort((a, b) => a.scheduledAt.localeCompare(b.scheduledAt))
-    .map((i) => ({ interview: i, app: applications.find((a) => a.id === i.applicationId)! }))
+  useEffect(() => {
+    let cancelled = false
+    getDashboard().then(
+      (d) => !cancelled && setData(d),
+      (err) => !cancelled && setError(errorText(err)),
+    )
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   return (
     <main className="page">
@@ -45,41 +50,52 @@ export default function Dashboard() {
         </div>
       </header>
 
-      <section>
-        <h2>Applications by status</h2>
-        <div className="count-grid">
-          {counts.map(({ status, count }) => (
-            <Link key={status} to={`/applications?status=${status}`} className="count-card">
-              <div className="count-value">{count}</div>
-              <StatusBadge status={status} />
-            </Link>
-          ))}
-        </div>
-      </section>
-
-      <section>
-        <h2>Upcoming interviews</h2>
-        {upcoming.length === 0 ? (
-          <p className="card muted">No upcoming interviews.</p>
-        ) : (
-          <ul className="card list">
-            {upcoming.map(({ interview, app }) => (
-              <li key={interview.id}>
-                <Link to={`/applications/${app.id}`} state={{ from: '/dashboard' }} className="list-row">
-                  <div>
-                    <strong>{app.jobTitle}</strong>
-                    <div className="muted">{companyName(app.companyId)}</div>
-                  </div>
-                  <div className="list-row-meta">
-                    <span>{formatDateTime(interview.scheduledAt)}</span>
-                    <span className="tag">{label(interview.type)}</span>
-                  </div>
+      {error && <div className="alert">{error}</div>}
+      {!data ? (
+        !error && <p className="muted">Loading...</p>
+      ) : (
+        <>
+          <section>
+            <h2>Applications by status</h2>
+            <div className="count-grid">
+              {STATUSES.map((status) => (
+                <Link key={status} to={`/applications?status=${status}`} className="count-card">
+                  <div className="count-value">{data.counts[status]}</div>
+                  <StatusBadge status={status} />
                 </Link>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
+              ))}
+            </div>
+          </section>
+
+          <section>
+            <h2>Upcoming interviews</h2>
+            {data.upcomingInterviews.length === 0 ? (
+              <p className="card muted">No upcoming interviews.</p>
+            ) : (
+              <ul className="card list">
+                {data.upcomingInterviews.map((interview) => (
+                  <li key={interview.id}>
+                    <Link
+                      to={`/applications/${interview.applicationId}`}
+                      state={{ from: '/dashboard' }}
+                      className="list-row"
+                    >
+                      <div>
+                        <strong>{interview.jobTitle}</strong>
+                        <div className="muted">{interview.companyName}</div>
+                      </div>
+                      <div className="list-row-meta">
+                        <span>{formatDateTime(interview.scheduledAt)}</span>
+                        <span className="tag">{label(interview.type)}</span>
+                      </div>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+        </>
+      )}
     </main>
   )
 }

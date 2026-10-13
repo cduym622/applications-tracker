@@ -26,19 +26,23 @@ export interface Company {
   name: string
 }
 
+export interface NextInterview {
+  id: number
+  scheduledAt: string // ISO date-time
+  type: InterviewType
+}
+
 export interface Interview {
   id: number
-  applicationId: number
   scheduledAt: string // ISO date-time
   type: InterviewType
   outcome: InterviewOutcome
-  roundName?: string
-  interviewerName?: string
+  roundName: string | null
+  interviewerName: string | null
 }
 
 export interface Note {
   id: number
-  applicationId: number
   text: string
   createdAt: string
   updatedAt: string
@@ -47,13 +51,37 @@ export interface Note {
 export interface Application {
   id: number
   jobTitle: string
-  companyId: number
+  company: Company
   location: string
   status: Status
-  salary?: string
-  jobPostingUrl?: string
-  dateApplied?: string // YYYY-MM-DD
-  description?: string
+  salary: string | null
+  jobPostingUrl: string | null
+  dateApplied: string | null // YYYY-MM-DD
+  description: string | null
+  nextInterview: NextInterview | null
+  createdAt: string
+  updatedAt: string
+}
+
+export interface UpcomingInterview {
+  id: number
+  jobTitle: string
+  companyName: string
+  scheduledAt: string
+  type: InterviewType
+  applicationId: number
+}
+
+export interface DashboardData {
+  counts: Record<Status, number>
+  upcomingInterviews: UpcomingInterview[]
+}
+
+export interface ApplicationPage {
+  count: number
+  next: string | null
+  previous: string | null
+  results: Application[]
 }
 
 /** "SCREENING" -> "Screening" */

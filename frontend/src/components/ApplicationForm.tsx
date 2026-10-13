@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react'
-import { companies } from '../mockData'
-import { label, STATUSES, type Status } from '../types'
+import type { ApplicationInput } from '../api'
+import { label, STATUSES, type Company, type Status } from '../types'
 
 export interface ApplicationFormValues {
   jobTitle: string
@@ -24,14 +24,37 @@ export const emptyForm: ApplicationFormValues = {
   description: '',
 }
 
+/** The form's company field is sent as company_name. */
+export function toApplicationInput(values: ApplicationFormValues): ApplicationInput {
+  const { company, ...rest } = values
+  return { ...rest, companyName: company }
+}
+
 interface Props {
   initial: ApplicationFormValues
   submitLabel: string
+  /** Null until GET /api/companies/ has finished. */
+  companies: Company[] | null
+  /** First API message per field, keyed by the API field name. */
+  errors: Record<string, string>
+  busy: boolean
   onSubmit: (values: ApplicationFormValues) => void
   onCancel: () => void
 }
 
-export default function ApplicationForm({ initial, submitLabel, onSubmit, onCancel }: Props) {
+function FieldError({ message }: { message?: string }) {
+  return message ? <small className="field-error">{message}</small> : null
+}
+
+export default function ApplicationForm({
+  initial,
+  submitLabel,
+  companies,
+  errors,
+  busy,
+  onSubmit,
+  onCancel,
+}: Props) {
   const [values, setValues] = useState(initial)
 
   const set = <K extends keyof ApplicationFormValues>(key: K, value: ApplicationFormValues[K]) =>
@@ -42,7 +65,10 @@ export default function ApplicationForm({ initial, submitLabel, onSubmit, onCanc
     onSubmit(values)
   }
 
+  const invalid = (field: string) => (errors[field] ? 'invalid' : '')
+
   const isNewCompany =
+    companies !== null &&
     values.company.trim() !== '' &&
     !companies.some((c) => c.name.toLowerCase() === values.company.trim().toLowerCase())
 
@@ -51,7 +77,13 @@ export default function ApplicationForm({ initial, submitLabel, onSubmit, onCanc
       <div className="form-grid">
         <label className="field">
           <span>Job title *</span>
-          <input required value={values.jobTitle} onChange={(e) => set('jobTitle', e.target.value)} />
+          <input
+            required
+            className={invalid('job_title')}
+            value={values.jobTitle}
+            onChange={(e) => set('jobTitle', e.target.value)}
+          />
+          <FieldError message={errors.job_title} />
         </label>
 
         <label className="field">
@@ -59,15 +91,17 @@ export default function ApplicationForm({ initial, submitLabel, onSubmit, onCanc
           <input
             required
             list="company-options"
+            className={invalid('company_name')}
             placeholder="Choose or type a new name"
             value={values.company}
             onChange={(e) => set('company', e.target.value)}
           />
           <datalist id="company-options">
-            {companies.map((c) => (
+            {(companies ?? []).map((c) => (
               <option key={c.id} value={c.name} />
             ))}
           </datalist>
+          <FieldError message={errors.company_name} />
           {isNewCompany && <small className="hint">A new company will be created.</small>}
         </label>
 
@@ -76,38 +110,49 @@ export default function ApplicationForm({ initial, submitLabel, onSubmit, onCanc
           <input
             required
             placeholder="City, Remote, or Hybrid"
+            className={invalid('location')}
             value={values.location}
             onChange={(e) => set('location', e.target.value)}
           />
+          <FieldError message={errors.location} />
         </label>
 
         <label className="field">
           <span>Status *</span>
-          <select value={values.status} onChange={(e) => set('status', e.target.value as Status)}>
+          <select
+            className={invalid('status')}
+            value={values.status}
+            onChange={(e) => set('status', e.target.value as Status)}
+          >
             {STATUSES.map((s) => (
               <option key={s} value={s}>
                 {label(s)}
               </option>
             ))}
           </select>
+          <FieldError message={errors.status} />
         </label>
 
         <label className="field">
           <span>Salary</span>
           <input
             placeholder="e.g. $110k or $100k – $120k"
+            className={invalid('salary')}
             value={values.salary}
             onChange={(e) => set('salary', e.target.value)}
           />
+          <FieldError message={errors.salary} />
         </label>
 
         <label className="field">
           <span>Date applied</span>
           <input
             type="date"
+            className={invalid('date_applied')}
             value={values.dateApplied}
             onChange={(e) => set('dateApplied', e.target.value)}
           />
+          <FieldError message={errors.date_applied} />
         </label>
 
         <label className="field span-2">
@@ -115,23 +160,27 @@ export default function ApplicationForm({ initial, submitLabel, onSubmit, onCanc
           <input
             type="url"
             placeholder="https://"
+            className={invalid('job_posting_url')}
             value={values.jobPostingUrl}
             onChange={(e) => set('jobPostingUrl', e.target.value)}
           />
+          <FieldError message={errors.job_posting_url} />
         </label>
 
         <label className="field span-2">
           <span>Description</span>
           <textarea
             rows={4}
+            className={invalid('description')}
             value={values.description}
             onChange={(e) => set('description', e.target.value)}
           />
+          <FieldError message={errors.description} />
         </label>
       </div>
 
       <div className="actions">
-        <button type="submit" className="btn btn-primary">
+        <button type="submit" className="btn btn-primary" disabled={busy}>
           {submitLabel}
         </button>
         <button type="button" className="btn" onClick={onCancel}>

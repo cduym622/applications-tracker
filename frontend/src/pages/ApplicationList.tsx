@@ -1,17 +1,13 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
+import { ApiError, errorText, listApplications, updateApplication } from '../api'
 import BackLink from '../components/BackLink'
 import StatusMenu from '../components/StatusMenu'
-import {
-  applications,
-  companyName,
-  formatDate,
-  formatDateTime,
-  nextInterview,
-} from '../mockData'
-import { label, STATUSES, type Status } from '../types'
+import { formatDate, formatDateTime } from '../format'
+import { label, STATUSES, type ApplicationPage, type Status } from '../types'
 
-const PAGE_SIZE = 5
+// Matches ApplicationPagination in backend/tracker/filters.py.
+const PAGE_SIZE = 10
 
 type ListParam = 'q' | 'from' | 'to' | 'status' | 'page'
 
@@ -19,8 +15,10 @@ export default function ApplicationList() {
   const navigate = useNavigate()
   const location = useLocation()
   const [params, setParams] = useSearchParams()
-  // Re-render after a status change. The mock record is mutated in place.
-  const [, bump] = useState(0)
+  const [data, setData] = useState<ApplicationPage | null>(null)
+  const [error, setError] = useState('')
+  // Bumped after a status change to refetch the same address.
+  const [reload, setReload] = useState(0)
 
   // Search, dates, status, and page live in the address so Back from detail restores them.
   const search = params.get('q') ?? ''
@@ -46,32 +44,46 @@ export default function ApplicationList() {
     )
   }
 
-  // Client-side stand-in for the server's search, filter, and pagination.
-  const q = search.trim().toLowerCase()
-  const rangeSet = from !== '' || to !== ''
-  const filtered = applications.filter((a) => {
-    if (q && !a.jobTitle.toLowerCase().includes(q) && !companyName(a.companyId).toLowerCase().includes(q)) {
-      return false
+  // One address, one GET. The server does the search, filters, and paging.
+  const key = params.toString()
+  useEffect(() => {
+    let cancelled = false
+    listApplications({ q: search.trim(), from, to, status, page }).then(
+      (result) => {
+        if (cancelled) return
+        setData(result)
+        setError('')
+      },
+      (err) => {
+        if (cancelled) return
+        // The page is gone, for example after the last row on it changed status.
+        // Step back one page; the new address loads again.
+        if (err instanceof ApiError && err.status === 404 && page > 1) {
+          update({ page: page - 1 > 1 ? String(page - 1) : '' }, true)
+          return
+        }
+        setData(null)
+        setError(errorText(err))
+      },
+    )
+    return () => {
+      cancelled = true
     }
-    if (rangeSet) {
-      if (!a.dateApplied) return false
-      if (from && a.dateApplied < from) return false
-      if (to && a.dateApplied > to) return false
+    // key covers every value read from the address.
+  }, [key, reload])
+
+  const changeStatus = async (id: number, next: Status) => {
+    try {
+      await updateApplication(id, { status: next })
+      setReload((n) => n + 1)
+    } catch (err) {
+      setError(errorText(err))
     }
-    if (status && a.status !== status) return false
-    return true
-  })
-
-  const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
-  const current = Math.min(page, pageCount)
-  const rows = filtered.slice((current - 1) * PAGE_SIZE, current * PAGE_SIZE)
-
-  const changeStatus = (id: number, next: Status) => {
-    // Mock: stands in for PATCH /api/applications/{id}/ with { status }.
-    const app = applications.find((a) => a.id === id)
-    if (app) app.status = next
-    bump((n) => n + 1)
   }
+
+  const rows = data?.results ?? []
+  const pageCount = data ? Math.ceil(data.count / PAGE_SIZE) : 0
+  const rangeSet = from !== '' || to !== ''
 
   return (
     <main className="page">
@@ -119,70 +131,76 @@ export default function ApplicationList() {
         )}
       </div>
 
-      <div className="card table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>Job title</th>
-              <th>Company</th>
-              <th>Status</th>
-              <th>Date applied</th>
-              <th>Next interview</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.length === 0 ? (
-              <tr>
-                <td colSpan={5} className="muted center">
-                  No applications match.
-                </td>
-              </tr>
-            ) : (
-              rows.map((a) => {
-                const next = nextInterview(a.id)
-                return (
-                  <tr
-                    key={a.id}
-                    className="clickable"
-                    onClick={() =>
-                      navigate(`/applications/${a.id}`, {
-                        state: { from: location.pathname + location.search },
-                      })
-                    }
-                  >
-                    <td>
-                      <strong>{a.jobTitle}</strong>
-                    </td>
-                    <td>{companyName(a.companyId)}</td>
-                    <td>
-                      <StatusMenu status={a.status} onChange={(s) => changeStatus(a.id, s)} />
-                    </td>
-                    <td>{a.dateApplied ? formatDate(a.dateApplied) : ''}</td>
-                    <td>{next ? formatDateTime(next.scheduledAt) : ''}</td>
-                  </tr>
-                )
-              })
-            )}
-          </tbody>
-        </table>
-      </div>
+      {error && <div className="alert">{error}</div>}
 
-      {pageCount > 1 && (
+      {!data ? (
+        !error && <p className="muted">Loading...</p>
+      ) : (
+        <div className="card table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Job title</th>
+                <th>Company</th>
+                <th>Status</th>
+                <th>Date applied</th>
+                <th>Next interview</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="muted center">
+                    No applications match.
+                  </td>
+                </tr>
+              ) : (
+                rows.map((a) => {
+                  const next = a.nextInterview
+                  return (
+                    <tr
+                      key={a.id}
+                      className="clickable"
+                      onClick={() =>
+                        navigate(`/applications/${a.id}`, {
+                          state: { from: location.pathname + location.search },
+                        })
+                      }
+                    >
+                      <td>
+                        <strong>{a.jobTitle}</strong>
+                      </td>
+                      <td>{a.company.name}</td>
+                      <td>
+                        <StatusMenu status={a.status} onChange={(s) => changeStatus(a.id, s)} />
+                      </td>
+                      <td>{a.dateApplied ? formatDate(a.dateApplied) : ''}</td>
+                      <td>{next ? formatDateTime(next.scheduledAt) : ''}</td>
+                    </tr>
+                  )
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {data && data.count > 0 && (data.next || data.previous) && (
         <div className="pager">
           <button
             className="btn"
-            disabled={current === 1}
-            onClick={() => update({ page: current - 1 > 1 ? String(current - 1) : '' })}
+            disabled={!data.previous}
+            onClick={() => update({ page: page - 1 > 1 ? String(page - 1) : '' })}
           >
             ← Previous
           </button>
           <span className="muted">
-            Page {current} of {pageCount}
+            Page {page} of {pageCount}
           </span>
           <button
             className="btn"
-            disabled={current === pageCount}
-            onClick={() => update({ page: String(current + 1) })}
+            disabled={!data.next}
+            onClick={() => update({ page: String(page + 1) })}
           >
             Next →
           </button>

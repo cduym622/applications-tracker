@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
+import { ApiError, errorText, login } from '../api'
 import { useAuth } from '../auth'
 
 export default function Login() {
@@ -7,20 +8,32 @@ export default function Login() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
+  const [errors, setErrors] = useState<Record<string, string>>({})
+  const [busy, setBusy] = useState(false)
 
-  const handleSubmit = (e: FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
-    // Mock: any password containing "wrong" shows the failed-login error.
-    if (password.includes('wrong')) {
-      setError('Email or password is incorrect.')
-      return
+    setBusy(true)
+    setError('')
+    setErrors({})
+    try {
+      const { access } = await login(email, password)
+      // Storing the token flips the guard, which opens the dashboard.
+      signIn(access)
+    } catch (err) {
+      if (err instanceof ApiError) {
+        setErrors(err.fieldErrors)
+        setError(err.message)
+      } else {
+        setError(errorText(err))
+      }
+      setBusy(false)
     }
-    signIn()
   }
 
   return (
     <div className="auth-page">
-      <form className="card auth-card" onSubmit={handleSubmit}>
+      <form className="card auth-card" onSubmit={handleSubmit} noValidate>
         <h1>Log in</h1>
         <p className="muted">Track your job applications.</p>
 
@@ -28,19 +41,26 @@ export default function Login() {
 
         <label className="field">
           <span>Email</span>
-          <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
+          <input
+            type="email"
+            className={errors.email ? 'invalid' : ''}
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+          />
+          {errors.email && <small className="field-error">{errors.email}</small>}
         </label>
         <label className="field">
           <span>Password</span>
           <input
             type="password"
-            required
+            className={errors.password ? 'invalid' : ''}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
           />
+          {errors.password && <small className="field-error">{errors.password}</small>}
         </label>
 
-        <button type="submit" className="btn btn-primary btn-block">
+        <button type="submit" className="btn btn-primary btn-block" disabled={busy}>
           Log in
         </button>
         <p className="muted center">

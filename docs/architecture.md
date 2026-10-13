@@ -65,6 +65,8 @@ docs/                    PROJECTSPEC.md, PROJECTDESCRIPTION.md, architecture.md,
   Phase1-Docs/           P1DOCSCHANGES.md
   Phase2-Docs/           P2IMPLEMENTATIONMANUAL.md, P2DOCSCHANGES.md
   Phase3-Docs/           P3IMPLEMENTATIONMANUAL.md, P3DOCSCHANGES.md
+  Phase4-Docs/           P4IMPLEMENTATIONMANUAL.md, P4DOCSCHANGES.md,
+                         P4-CHANGES.md
 .github/workflows/       CI, then CD
 ```
 

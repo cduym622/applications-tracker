@@ -1,25 +1,35 @@
 import { useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
+import { ApiError, errorText, register } from '../api'
 import { useAuth } from '../auth'
 
 export default function Register() {
   const { signIn } = useAuth()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [errors, setErrors] = useState<{ email?: string; password?: string }>({})
+  const [error, setError] = useState('')
+  const [errors, setErrors] = useState<Record<string, string>>({})
+  const [busy, setBusy] = useState(false)
 
-  const handleSubmit = (e: FormEvent) => {
+  // The API checks for a duplicate email, a short or common password, and a bad email.
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
-    const next: typeof errors = {}
-    // Mock: this address stands in for an email that is already registered.
-    if (email.toLowerCase() === 'taken@example.com') {
-      next.email = 'An account with this email already exists.'
+    setBusy(true)
+    setError('')
+    setErrors({})
+    try {
+      const { access } = await register(email, password)
+      // Storing the token flips the guard, which opens the dashboard.
+      signIn(access)
+    } catch (err) {
+      if (err instanceof ApiError) {
+        setErrors(err.fieldErrors)
+        setError(err.message)
+      } else {
+        setError(errorText(err))
+      }
+      setBusy(false)
     }
-    if (password.length < 8) {
-      next.password = 'Password must be at least 8 characters.'
-    }
-    setErrors(next)
-    if (Object.keys(next).length === 0) signIn()
   }
 
   return (
@@ -27,6 +37,8 @@ export default function Register() {
       <form className="card auth-card" onSubmit={handleSubmit} noValidate>
         <h1>Create account</h1>
         <p className="muted">Start tracking your applications.</p>
+
+        {error && <div className="alert">{error}</div>}
 
         <label className="field">
           <span>Email</span>
@@ -53,7 +65,7 @@ export default function Register() {
           )}
         </label>
 
-        <button type="submit" className="btn btn-primary btn-block">
+        <button type="submit" className="btn btn-primary btn-block" disabled={busy}>
           Register
         </button>
         <p className="muted center">
