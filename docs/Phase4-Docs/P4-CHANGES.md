@@ -96,7 +96,7 @@ Auth:
 - [x] Log out. The landing page opens and `access` is gone.
 - [x] Log in with a wrong password. The alert says `Email or password is incorrect.`
 - [x] Log in correctly, then refresh. You stay on the dashboard.
-- [ ] While signed in, delete the last character of `access` in Local Storage, then open the list. The payload still decodes, so the client counts you as signed in. The API rejects the signature with a 401, and you land on `/login`.
+- [x] While signed in, delete the last character of `access` in Local Storage, then open the list. The payload still decodes, so the client counts you as signed in. The API rejects the signature with a 401, and you land on `/login`.
 
 Applications:
 

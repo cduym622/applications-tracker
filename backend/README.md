@@ -36,23 +36,19 @@ To add a dependency, install it, then pin its exact version in `requirements.txt
 
 ## 3. Start PostgreSQL
 
-1. Download Postgres.app from https://postgresapp.com and move it to `/Applications`.
+1. Download Postgres.app from [https://postgresapp.com](https://postgresapp.com) and move it to `/Applications`.
 2. Open it and click **Initialize**. The server listens on `localhost:5432`.
 3. Optional: put its command-line tools on your `PATH`:
-
-   ```sh
+  ```sh
    sudo mkdir -p /etc/paths.d
    echo /Applications/Postgres.app/Contents/Versions/latest/bin | sudo tee /etc/paths.d/postgresapp
-   ```
-
+  ```
    Open a new terminal afterwards.
-
 4. Check that it is running, then create the database:
-
-   ```sh
+  ```sh
    pg_isready -h localhost
    createdb -h localhost applications_tracker
-   ```
+  ```
 
 Postgres.app creates a superuser with your macOS username and no password. Use that as `POSTGRES_USER` and leave `POSTGRES_PASSWORD` empty.
 
@@ -68,17 +64,19 @@ cp .env.example .env
 
 Edit `.env`:
 
-| Variable | Local value | Notes |
-| --- | --- | --- |
-| `SECRET_KEY` | a random string | Required. Startup fails without it. Signs JWTs. Use at least 32 characters, or PyJWT warns about key length. |
-| `DEBUG` | `true` | Defaults to `false`. |
-| `ALLOWED_HOSTS` | `localhost,127.0.0.1` | Comma-separated. |
-| `POSTGRES_DB` | `applications_tracker` | |
-| `POSTGRES_USER` | your macOS username | Postgres.app default. |
-| `POSTGRES_PASSWORD` | empty | Postgres.app default. |
-| `POSTGRES_HOST` | `localhost` | |
-| `POSTGRES_PORT` | `5432` | Defaults to 5432. |
-| `NUM_PROXIES` | `0` | Proxies in front of Django. Production sets 2 (CloudFront and the load balancer) so the throttle reads the client IP. |
+
+| Variable            | Local value            | Notes                                                                                                                 |
+| ------------------- | ---------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| `SECRET_KEY`        | a random string        | Required. Startup fails without it. Signs JWTs. Use at least 32 characters, or PyJWT warns about key length.          |
+| `DEBUG`             | `true`                 | Defaults to `false`.                                                                                                  |
+| `ALLOWED_HOSTS`     | `localhost,127.0.0.1`  | Comma-separated.                                                                                                      |
+| `POSTGRES_DB`       | `applications_tracker` |                                                                                                                       |
+| `POSTGRES_USER`     | your macOS username    | Postgres.app default.                                                                                                 |
+| `POSTGRES_PASSWORD` | empty                  | Postgres.app default.                                                                                                 |
+| `POSTGRES_HOST`     | `localhost`            |                                                                                                                       |
+| `POSTGRES_PORT`     | `5432`                 | Defaults to 5432.                                                                                                     |
+| `NUM_PROXIES`       | `0`                    | Proxies in front of Django. Production sets 2 (CloudFront and the load balancer) so the throttle reads the client IP. |
+
 
 Generate a secret key:
 
@@ -103,8 +101,8 @@ python manage.py runserver
 
 The API is at `http://localhost:8000/api/`.
 
-- Swagger UI: http://localhost:8000/api/schema/swagger-ui/
-- OpenAPI schema: http://localhost:8000/api/schema/
+- Swagger UI: [http://localhost:8000/api/schema/swagger-ui/](http://localhost:8000/api/schema/swagger-ui/)
+- OpenAPI schema: [http://localhost:8000/api/schema/](http://localhost:8000/api/schema/)
 - Health checks: `/api/health/live/` (no database) and `/api/health/` (queries the database)
 
 To try it out, register, then use the token:
@@ -137,16 +135,18 @@ If `pg_isready` is not found, the Postgres.app tools are not on your `PATH` (ste
 
 ## Useful commands
 
-| Command | What it does |
-| --- | --- |
-| `pytest` | Runs the test suite against Postgres.app. Load `.env` first. |
-| `python manage.py makemigrations` | Creates a migration after a model change. Commit it with the model change. |
-| `python manage.py makemigrations --check --dry-run` | Fails if a model change has no migration. |
-| `python manage.py migrate` | Applies migrations. |
-| `python manage.py spectacular --validate --fail-on-warn --file schema.yaml` | Generates the OpenAPI schema and fails on any warning. |
-| `python manage.py check` | Django system checks. |
-| `python manage.py flush` | Deletes all rows and keeps the tables. |
-| `dropdb -h localhost applications_tracker && createdb -h localhost applications_tracker` | Starts the database over. Run `migrate` afterwards. |
+
+| Command                                                                                  | What it does                                                               |
+| ---------------------------------------------------------------------------------------- | -------------------------------------------------------------------------- |
+| `pytest`                                                                                 | Runs the test suite against Postgres.app. Load `.env` first.               |
+| `python manage.py makemigrations`                                                        | Creates a migration after a model change. Commit it with the model change. |
+| `python manage.py makemigrations --check --dry-run`                                      | Fails if a model change has no migration.                                  |
+| `python manage.py migrate`                                                               | Applies migrations.                                                        |
+| `python manage.py spectacular --validate --fail-on-warn --file schema.yaml`              | Generates the OpenAPI schema and fails on any warning.                     |
+| `python manage.py check`                                                                 | Django system checks.                                                      |
+| `python manage.py flush`                                                                 | Deletes all rows and keeps the tables.                                     |
+| `dropdb -h localhost applications_tracker && createdb -h localhost applications_tracker` | Starts the database over. Run `migrate` afterwards.                        |
+
 
 Migrations run before new code during deploys (`../docs/architecture.md`). Each migration must work with the code that is still running: add a column before code uses it, and remove it only after code stops using it.
 
@@ -166,6 +166,8 @@ tracker/
 pytest.ini         Points pytest-django at config.settings
 ```
 
+
+
 ## How it behaves
 
 These are the behaviors that are easy to miss. `api.md` and the manual have the details.
@@ -178,13 +180,17 @@ These are the behaviors that are easy to miss. `api.md` and the manual have the 
 - **Interviews.** PATCH changes `outcome` only. Any other key is a 400 on that key.
 - **Notes.** `updated_at` moves only when `text` changes.
 
+
+
 ## Troubleshooting
 
-- **`KeyError: 'SECRET_KEY'`**: the environment is not loaded. Run `set -a; source .env; set +a`.
-- **`connection refused` on port 5432**: Postgres.app is not running. Open it and start the server.
-- **`runserver` exits with an `OperationalError`**: runserver checks migrations against the database at startup, so it cannot start while PostgreSQL is down. The API itself still answers `/api/health/live/` with 200 and `/api/health/` with 503 during an outage.
-- **`InsecureKeyLengthWarning`**: `SECRET_KEY` is shorter than 32 characters.
-- **`check --deploy` warnings**: CSRF is off on purpose (JWT only). HSTS and SSL redirect are set up with TLS in Phase 7.
+- `KeyError: 'SECRET_KEY'`: the environment is not loaded. Run `set -a; source .env; set +a`.
+- `connection refused` **on port 5432**: Postgres.app is not running. Open it and start the server.
+- `runserver` **exits with an** `OperationalError`: runserver checks migrations against the database at startup, so it cannot start while PostgreSQL is down. The API itself still answers `/api/health/live/` with 200 and `/api/health/` with 503 during an outage.
+- `InsecureKeyLengthWarning`: `SECRET_KEY` is shorter than 32 characters.
+- `check --deploy` **warnings**: CSRF is off on purpose (JWT only). HSTS and SSL redirect are set up with TLS in Phase 7.
+
+
 
 ## Not in this phase
 
