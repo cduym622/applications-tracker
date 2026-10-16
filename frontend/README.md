@@ -33,6 +33,10 @@ npm run build    # type-check with tsc, then build into dist/
 
 `docs/Phase4-Docs/P4IMPLEMENTATIONMANUAL.md` describes the session, request, error, and paging rules the screens follow.
 
-## Not in this phase
+## Run in Docker
 
-Docker Compose comes in Phase 5.
+`docker compose up` from the repository root starts these screens in a container with the API and PostgreSQL. Open `http://127.0.0.1:5173`. This folder is bind-mounted into the container, so edits reload as they do on the host.
+
+Inside Compose, the proxy target is `http://backend:8000`, set through `API_PROXY_TARGET`. When that variable is unset, as in the host steps above, `vite.config.ts` proxies to `http://127.0.0.1:8000`.
+
+The container keeps its own `node_modules` in an anonymous volume, separate from the host's. Compose reuses that volume on restart, so after changing `package.json`, rebuild and replace it with `docker compose up --build --renew-anon-volumes`.
