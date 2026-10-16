@@ -69,8 +69,12 @@ compose.yaml             Local stack: frontend, backend, and db
 .env.example             Optional overrides for compose.yaml
 backend/                 Django project config and one app, tracker
   Dockerfile             API image, run by Compose and by ECS
+  requirements-dev.txt   requirements.txt plus Ruff, for CI and local checks
+  ruff.toml              Ruff lint and format settings
 frontend/                React and TypeScript screens
   Dockerfile             Vite dev server image, local only
+  eslint.config.js       ESLint settings
+  .prettierrc.json       Prettier settings
 docs/                    PROJECTSPEC.md, PROJECTDESCRIPTION.md, architecture.md,
                          database.md, api.md
   Phase1-Docs/           P1DOCSCHANGES.md
@@ -79,7 +83,9 @@ docs/                    PROJECTSPEC.md, PROJECTDESCRIPTION.md, architecture.md,
   Phase4-Docs/           P4IMPLEMENTATIONMANUAL.md, P4DOCSCHANGES.md,
                          P4-CHANGES.md
   Phase5-Docs/           P5DOCSCHANGES.md, P5-INFO.md
-.github/workflows/       CI, then CD
+  Phase6-Docs/           P6DOCSCHANGES.md, P6-INFO.md
+.github/workflows/
+  ci.yml                 CI on each pull request and each push to main
 ```
 
 The API image's default command is gunicorn alone. It does not run migrations, because production runs them as a one-off ECS task that must succeed before the service updates. `compose.yaml` overrides the command locally to run `migrate` first.
@@ -94,6 +100,14 @@ These are required, and Django or Django REST Framework does not provide them:
 - `drf-spectacular` emits the OpenAPI schema and Swagger UI. The spec requires both.
 - `psycopg` is the PostgreSQL driver Django uses to talk to the database.
 - `gunicorn` serves the API in the container. Django's `runserver` is for development only, and the spec requires a deployed backend.
+
+## Development tools
+
+The spec's CI runs lint and formatting checks, and the repo had no tool for either. These run in CI and on a developer's machine. None of them is installed in the API image or shipped in the frontend build.
+
+- `ruff` lints and formats the Python code. One pinned tool covers both checks. It is in `backend/requirements-dev.txt`, which includes `requirements.txt`, so `backend/Dockerfile` keeps installing only what the API needs.
+- `eslint`, with `@eslint/js`, `typescript-eslint`, and `eslint-plugin-react-hooks`, lints the TypeScript and React code. `typescript-eslint` lets ESLint parse TypeScript. The hooks plugin checks the rules of hooks, which `tsc` does not.
+- `prettier` formats the frontend code. `eslint-config-prettier` turns off ESLint rules that would disagree with it.
 
 ## Authentication
 
@@ -132,6 +146,14 @@ CloudFront does not forward the viewer's `Host` header to the load balancer (see
 ## CI and CD
 
 On each pull request, GitHub Actions installs dependencies, starts PostgreSQL, runs migrations, runs tests, runs lint and formatting checks, and builds the API image and the frontend. A failed test or check fails the pull request.
+
+`.github/workflows/ci.yml` runs those steps as three parallel jobs. A push to `main` runs the same jobs.
+
+- **Backend tests and lint.** Python 3.12 and a `postgres:17` service container, the same major version Compose runs. It installs `requirements-dev.txt`, runs `migrate` on an empty database, runs `pytest`, then `ruff check` and `ruff format --check`.
+- **Frontend lint and build.** Node 22, the version in `frontend/Dockerfile`. It runs `npm ci`, ESLint, `prettier --check`, and `npm run build`, which type-checks with `tsc` before the Vite build.
+- **API image build.** `docker build` of `backend/Dockerfile`, the image ECS will run. The image is not pushed. The frontend image is not built, because production serves the Vite build from S3 and never runs that image.
+
+The jobs share nothing, so running them in parallel gives the full result sooner, and a failure in one job does not hide the result of the others. The backend job's `SECRET_KEY` and database password are written in the workflow. They protect a database that exists only for that job, so they are not GitHub secrets.
 
 On a push to `main`, after those checks pass, the workflow does these steps in order:
 

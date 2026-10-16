@@ -75,9 +75,7 @@ def test_another_users_interviews_and_notes_are_404(bob, user, make_application,
         assert response.json() == NOT_FOUND
 
 
-def test_child_id_under_the_callers_other_application_is_404(
-    alice, user, make_application, make_interview, make_note
-):
+def test_child_id_under_the_callers_other_application_is_404(alice, user, make_application, make_interview, make_note):
     first = make_application(user)
     second = make_application(user)
     interview = make_interview(first)

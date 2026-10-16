@@ -52,9 +52,7 @@ def test_every_route_in_api_md_is_in_the_schema(schema):
 
     served = {normalize(path): ops for path, ops in schema["paths"].items()}
     missing = [
-        f"{method} {path}"
-        for method, path in documented
-        if method.lower() not in served.get(normalize(path), {})
+        f"{method} {path}" for method, path in documented if method.lower() not in served.get(normalize(path), {})
     ]
     assert missing == []
 

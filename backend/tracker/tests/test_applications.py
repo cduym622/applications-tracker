@@ -92,9 +92,7 @@ def test_failed_save_leaves_no_new_company(auth_client, user):
     assert not Application.objects.exists()
 
 
-def test_delete_removes_interviews_and_notes_and_keeps_company(
-    auth_client, application, make_interview, make_note
-):
+def test_delete_removes_interviews_and_notes_and_keeps_company(auth_client, application, make_interview, make_note):
     make_interview(application)
     make_note(application)
     company_id = application.company_id

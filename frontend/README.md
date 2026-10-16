@@ -6,7 +6,7 @@ The stack is Vite, React 19, TypeScript, and react-router-dom 7, with plain CSS 
 
 ## Requirements
 
-Node 20 or later.
+Node 20.19 or later, which ESLint 10 needs. CI and the Docker image use Node 22.
 
 ## Run against the local API
 
@@ -28,6 +28,20 @@ Register an account, or log in with an existing one. The access token is stored 
 ```sh
 npm run build    # type-check with tsc, then build into dist/
 ```
+
+## Lint and format
+
+CI runs these on every pull request, then `npm run build`. Any ESLint warning fails the lint step.
+
+```sh
+npm run lint           # ESLint, with zero warnings allowed
+npm run format:check   # fail if any file needs Prettier formatting
+npm run format         # rewrite files to match
+```
+
+ESLint settings are in `eslint.config.js`: the recommended JavaScript and TypeScript rules and the React hooks rules. Type errors are left to `tsc` in `npm run build`. Prettier settings are in `.prettierrc.json`: single quotes, no semicolons, and lines up to 120 characters. `.prettierignore` skips `package-lock.json` and Markdown.
+
+`docs/Phase6-Docs/P6-INFO.md` describes the whole CI workflow.
 
 ## How the client is built
 

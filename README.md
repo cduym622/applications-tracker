@@ -25,7 +25,7 @@ Requirements are in [docs/PROJECTSPEC.md](docs/PROJECTSPEC.md). Screen flow is i
 | 3. Testing | pytest suite against PostgreSQL | Done, 2026-10-11. |
 | 4. Frontend | React screens calling the API | Done, 2016-10-15. |
 | 5. Docker | `docker compose up` runs the frontend, the API, and PostgreSQL | Done, 2026-10-15. |
-| 6. CI | GitHub Actions on each pull request: install, migrate, test, lint, image build, frontend build | Not started. |
+| 6. CI | GitHub Actions on each pull request: install, migrate, test, lint, image build, frontend build | Done, 2026-10-16. |
 | 7. AWS | ECS on Fargate, RDS, ECR, S3, CloudFront | Not started. |
 | 8. CD | A passing build on `main` deploys the API and the frontend | Not started. |
 | 9. Monitoring | CloudWatch logs and metrics, including the result of `GET /api/health/` | Not started. |
@@ -87,7 +87,7 @@ The list endpoint searches job title and company name, filters by an applied-dat
 
 ### Production design
 
-This is specified in [docs/architecture.md](docs/architecture.md) and is not deployed. Phases 5 through 9 build it.
+This is specified in [docs/architecture.md](docs/architecture.md) and is not deployed. Phases 7 through 9 build it.
 
 ```text
 Browser
@@ -102,10 +102,14 @@ Amazon ECR stores the API image. `main` is the release branch. After CI passes, 
 ## Repository
 
 ```text
+.github/
+  workflows/
+    ci.yml        CI: tests, lint, formatting, API image, frontend build
 compose.yaml      local stack: frontend, backend, db
 .env.example      optional overrides for compose.yaml
 backend/          Django project
   Dockerfile      API image (gunicorn)
+  ruff.toml       Python lint and format settings
   config/         settings, root URLs, WSGI
   tracker/        models, serializers, views, permissions, filters, urls, migrations
     tests/        pytest suite
@@ -121,6 +125,7 @@ docs/             spec, screen description, architecture, schema, API contract
   Phase3-Docs/    test manual and changelog
   Phase4-Docs/    frontend manual, changelog, and change summary
   Phase5-Docs/    Docker changelog and phase summary
+  Phase6-Docs/    CI changelog and phase summary
 ```
 
 `backend/README.md` is the API setup on the host, including Postgres.app, the virtualenv, and `.env`. `frontend/README.md` is how to run the screens against that API.
@@ -157,3 +162,22 @@ pytest
 ```
 
 pytest-django creates `test_<POSTGRES_DB>` on the same PostgreSQL server and drops it when the run finishes. The suite does not use SQLite.
+
+## Continuous integration
+
+[.github/workflows/ci.yml](.github/workflows/ci.yml) runs on every pull request and every push to `main`. It has three jobs, and a failure in any of them fails the pull request.
+
+| Job | What it runs |
+| --- | --- |
+| Backend tests and lint | PostgreSQL 17 in a service container, `migrate`, `pytest`, `ruff check`, `ruff format --check` |
+| Frontend lint and build | `npm ci`, ESLint, `prettier --check`, `npm run build` |
+| API image build | `docker build` of `backend/Dockerfile`, with no push |
+
+Run the same checks from the repository root before you push. Ruff needs the backend virtualenv with `requirements-dev.txt` installed (see `backend/README.md`).
+
+```sh
+(cd backend && ruff check . && ruff format --check .)
+(cd frontend && npm run lint && npm run format:check && npm run build)
+```
+
+`ruff format .` and `npm run format` rewrite files to match. [docs/Phase6-Docs/P6-INFO.md](docs/Phase6-Docs/P6-INFO.md) explains each job and how to fix a failing one.

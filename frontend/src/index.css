@@ -9,7 +9,12 @@
   --danger: #c43c3c;
   --radius: 10px;
 
-  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  font-family:
+    system-ui,
+    -apple-system,
+    'Segoe UI',
+    Roboto,
+    sans-serif;
   font-size: 15px;
   line-height: 1.5;
   color: var(--text);
@@ -316,13 +321,34 @@ input.invalid {
   font-weight: 600;
   white-space: nowrap;
 }
-.badge-saved { background: #eef0f3; color: #4b5563; }
-.badge-applied { background: #e6eefc; color: #2449ad; }
-.badge-screening { background: #f0e9fc; color: #6b3fc4; }
-.badge-interview { background: #fff3dc; color: #a15c00; }
-.badge-offer { background: #e3f6ea; color: #1d7a43; }
-.badge-rejected { background: #fdeaea; color: #b03030; }
-.badge-withdrawn { background: #f1f1f1; color: #6b7280; }
+.badge-saved {
+  background: #eef0f3;
+  color: #4b5563;
+}
+.badge-applied {
+  background: #e6eefc;
+  color: #2449ad;
+}
+.badge-screening {
+  background: #f0e9fc;
+  color: #6b3fc4;
+}
+.badge-interview {
+  background: #fff3dc;
+  color: #a15c00;
+}
+.badge-offer {
+  background: #e3f6ea;
+  color: #1d7a43;
+}
+.badge-rejected {
+  background: #fdeaea;
+  color: #b03030;
+}
+.badge-withdrawn {
+  background: #f1f1f1;
+  color: #6b7280;
+}
 
 .tag {
   display: inline-block;
@@ -332,9 +358,18 @@ input.invalid {
   font-size: 0.8rem;
   font-weight: 500;
 }
-.outcome-scheduled { background: #e6eefc; color: #2449ad; }
-.outcome-passed { background: #e3f6ea; color: #1d7a43; }
-.outcome-failed { background: #fdeaea; color: #b03030; }
+.outcome-scheduled {
+  background: #e6eefc;
+  color: #2449ad;
+}
+.outcome-passed {
+  background: #e3f6ea;
+  color: #1d7a43;
+}
+.outcome-failed {
+  background: #fdeaea;
+  color: #b03030;
+}
 
 /* Dashboard */
 .count-grid {

@@ -1,24 +1,10 @@
-export const STATUSES = [
-  'SAVED',
-  'APPLIED',
-  'SCREENING',
-  'INTERVIEW',
-  'OFFER',
-  'REJECTED',
-  'WITHDRAWN',
-] as const
+export const STATUSES = ['SAVED', 'APPLIED', 'SCREENING', 'INTERVIEW', 'OFFER', 'REJECTED', 'WITHDRAWN'] as const
 export type Status = (typeof STATUSES)[number]
 
 export const INTERVIEW_TYPES = ['PHONE', 'VIDEO', 'ONSITE'] as const
 export type InterviewType = (typeof INTERVIEW_TYPES)[number]
 
-export const INTERVIEW_OUTCOMES = [
-  'SCHEDULED',
-  'COMPLETED',
-  'PASSED',
-  'FAILED',
-  'CANCELLED',
-] as const
+export const INTERVIEW_OUTCOMES = ['SCHEDULED', 'COMPLETED', 'PASSED', 'FAILED', 'CANCELLED'] as const
 export type InterviewOutcome = (typeof INTERVIEW_OUTCOMES)[number]
 
 export interface Company {

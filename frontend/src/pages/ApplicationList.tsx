@@ -69,7 +69,8 @@ export default function ApplicationList() {
     return () => {
       cancelled = true
     }
-    // key covers every value read from the address.
+    // key covers every value read from the address. update is a new function each render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [key, reload])
 
   const changeStatus = async (id: number, next: Status) => {
@@ -197,11 +198,7 @@ export default function ApplicationList() {
           <span className="muted">
             Page {page} of {pageCount}
           </span>
-          <button
-            className="btn"
-            disabled={!data.next}
-            onClick={() => update({ page: String(page + 1) })}
-          >
+          <button className="btn" disabled={!data.next} onClick={() => update({ page: String(page + 1) })}>
             Next →
           </button>
         </div>

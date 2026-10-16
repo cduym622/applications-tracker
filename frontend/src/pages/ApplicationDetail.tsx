@@ -344,11 +344,7 @@ function InterviewsSection({
                     </option>
                   ))}
                 </select>
-                <button
-                  className="btn btn-ghost btn-sm"
-                  disabled={pending.includes(i.id)}
-                  onClick={() => remove(i)}
-                >
+                <button className="btn btn-ghost btn-sm" disabled={pending.includes(i.id)} onClick={() => remove(i)}>
                   Delete
                 </button>
               </div>
@@ -447,9 +443,7 @@ function NotesSection({
                 <div className="note-footer">
                   <span className="muted small">
                     Added {formatDateTime(n.createdAt)}
-                    {Date.parse(n.updatedAt) > Date.parse(n.createdAt) && (
-                      <> - Edited {formatDateTime(n.updatedAt)}</>
-                    )}
+                    {Date.parse(n.updatedAt) > Date.parse(n.createdAt) && <> - Edited {formatDateTime(n.updatedAt)}</>}
                   </span>
                   <div className="actions">
                     <button
@@ -473,12 +467,7 @@ function NotesSection({
       </ul>
 
       <form className="note-add" onSubmit={handleAdd}>
-        <textarea
-          rows={3}
-          placeholder="Add a note…"
-          value={draft}
-          onChange={(e) => setDraft(e.target.value)}
-        />
+        <textarea rows={3} placeholder="Add a note…" value={draft} onChange={(e) => setDraft(e.target.value)} />
         <button type="submit" className="btn btn-primary" disabled={busy || !draft.trim()}>
           Add note
         </button>
