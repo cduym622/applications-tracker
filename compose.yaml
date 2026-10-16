@@ -1,0 +1,75 @@
+# Local stack: `docker compose up` starts the frontend, the API, and PostgreSQL.
+# Open http://127.0.0.1:5173. The browser talks to Vite, and Vite proxies /api
+# to the API container.
+#
+# The ${VAR:-default} fallbacks are development-only values so the stack starts
+# with no setup. A root .env (see .env.example) overrides them.
+
+services:
+  db:
+    image: postgres:17
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-applications_tracker}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-local-dev-only-password}
+    # No published port: only the API reaches the database, and 5432 on the
+    # host stays free for Postgres.app, which pytest uses.
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U \"$$POSTGRES_USER\" -d \"$$POSTGRES_DB\""]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+    restart: unless-stopped
+
+  backend:
+    build:
+      context: ./backend
+    environment:
+      SECRET_KEY: ${SECRET_KEY:-local-dev-only-secret-key-do-not-use-in-production}
+      DEBUG: ${DEBUG:-true}
+      # backend is the Host header the Vite proxy sends.
+      ALLOWED_HOSTS: backend,localhost,127.0.0.1
+      POSTGRES_DB: ${POSTGRES_DB:-applications_tracker}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-local-dev-only-password}
+      POSTGRES_HOST: db
+      POSTGRES_PORT: "5432"
+      NUM_PROXIES: "0"
+    # The image does not migrate on its own. Locally, migrate on each start.
+    command: >
+      sh -c "python manage.py migrate --noinput &&
+             exec gunicorn config.wsgi:application --bind 0.0.0.0:8000 --workers 1"
+    ports:
+      - "127.0.0.1:8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/health/live/')"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 20s
+
+  frontend:
+    build:
+      context: ./frontend
+    environment:
+      API_PROXY_TARGET: http://backend:8000
+      # Bind-mounted file changes on macOS do not raise events in the
+      # container, so Vite polls.
+      CHOKIDAR_USEPOLLING: "true"
+    ports:
+      - "127.0.0.1:5173:5173"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    depends_on:
+      backend:
+        condition: service_healthy
+
+volumes:
+  db-data:

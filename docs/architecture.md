@@ -10,7 +10,14 @@ Locally, three containers run the product:
 - The Django and Django REST Framework API
 - PostgreSQL
 
-`docker compose up` starts all three. The frontend container proxies `/api` to Django with the Vite dev server's `server.proxy` setting, so the browser uses one origin locally and in production.
+`docker compose up` starts all three. The frontend container proxies `/api` to Django with the Vite dev server's `server.proxy` setting, so the browser uses one origin locally and in production. The proxy target comes from `API_PROXY_TARGET`, which Compose sets to `http://backend:8000`. Outside Compose it defaults to `http://127.0.0.1:8000`, where `runserver` listens.
+
+Locally the browser opens `http://127.0.0.1:5173`. The API container serves gunicorn on port 8000 and runs `migrate` before gunicorn starts. PostgreSQL publishes no port, so only the API reaches it, and port 5432 on the host stays free for the Postgres.app server that `pytest` uses.
+
+```text
+Browser -> frontend (Vite, :5173) -> backend (gunicorn, :8000) -> db (PostgreSQL)
+           proxies /api
+```
 
 In production the same product is a public site:
 
@@ -58,8 +65,12 @@ CloudFront custom error responses (404 to `/index.html` with 200) are not used. 
 ## Repository layout
 
 ```text
+compose.yaml             Local stack: frontend, backend, and db
+.env.example             Optional overrides for compose.yaml
 backend/                 Django project config and one app, tracker
+  Dockerfile             API image, run by Compose and by ECS
 frontend/                React and TypeScript screens
+  Dockerfile             Vite dev server image, local only
 docs/                    PROJECTSPEC.md, PROJECTDESCRIPTION.md, architecture.md,
                          database.md, api.md
   Phase1-Docs/           P1DOCSCHANGES.md
@@ -67,8 +78,11 @@ docs/                    PROJECTSPEC.md, PROJECTDESCRIPTION.md, architecture.md,
   Phase3-Docs/           P3IMPLEMENTATIONMANUAL.md, P3DOCSCHANGES.md
   Phase4-Docs/           P4IMPLEMENTATIONMANUAL.md, P4DOCSCHANGES.md,
                          P4-CHANGES.md
+  Phase5-Docs/           P5DOCSCHANGES.md, P5-INFO.md
 .github/workflows/       CI, then CD
 ```
+
+The API image's default command is gunicorn alone. It does not run migrations, because production runs them as a one-off ECS task that must succeed before the service updates. `compose.yaml` overrides the command locally to run `migrate` first.
 
 `tracker` holds models, serializers, views, permissions, filters, and the pytest suite in `tracker/tests/`. The spec asks for those modules inside one Django project.
 
@@ -96,6 +110,7 @@ Requests pass through CloudFront and the load balancer, so `REMOTE_ADDR` is the 
 - A token in `localStorage` can be read by any script on the page. A cross-site scripting bug would let an attacker use the token until it expires, for up to 24 hours. React escapes rendered text by default, and the app renders no user HTML.
 - Logout does not revoke the token. A copied token keeps working until it expires. Rotating `SECRET_KEY` revokes every token at once.
 - Register returns a field error when an email is already taken, as the spec requires. That tells a caller which emails have accounts, even though login does not. The rate limit on register reduces how fast someone can check emails.
+- The login and register limits are counted in Django's default cache, which lives in one process. gunicorn therefore runs one worker per container, so a container enforces the stated 10 per minute. Each ECS task is its own process, so with more than one task the real limit is 10 times the task count. A shared cache would fix that, but Redis is excluded by the spec unless a requirement needs it, and this one does not. One worker is enough for a single-user portfolio load.
 
 ## Configuration
 
@@ -106,7 +121,7 @@ The process reads configuration from environment variables. Secrets stay out of 
 - `ALLOWED_HOSTS`
 - `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_HOST`, `POSTGRES_PORT`
 
-Locally, Docker Compose reads them from a `.env` file that Git ignores.
+Locally, `compose.yaml` gives each one a development-only fallback, so `docker compose up` needs no setup. A `.env` file in the repository root, which Git ignores, overrides `SECRET_KEY`, `DEBUG`, `POSTGRES_DB`, `POSTGRES_USER`, and `POSTGRES_PASSWORD`. `.env.example` lists them. `backend/.env` is a separate file for `pytest` and `runserver` against Postgres.app, and Compose does not read it.
 
 In ECS, `SECRET_KEY` and `POSTGRES_PASSWORD` are SSM Parameter Store `SecureString` parameters. The task definition's `secrets` field references them, and ECS injects them as environment variables when the task starts. The other values are plain `environment` entries in the task definition. Parameter Store is required because the spec keeps secrets out of Git, and a plain task definition value would put them in the ECS console and API in clear text. It was chosen over Secrets Manager because the standard tier has no extra cost and the app does not need automatic rotation.
 

@@ -2,7 +2,7 @@
 
 Django and Django REST Framework API for the applications tracker. The API contract is in `../docs/api.md`, the schema in `../docs/database.md`, and the Phase 2 decisions in `../docs/Phase2-Docs/P2IMPLEMENTATIONMANUAL.md`. The test suite is described in `../docs/Phase3-Docs/P3IMPLEMENTATIONMANUAL.md`.
 
-These steps run the API directly on macOS with a local PostgreSQL. Docker Compose comes in Phase 5.
+These steps run the API directly on macOS with a local PostgreSQL. To run the frontend, the API, and PostgreSQL in containers instead, run `docker compose up` from the repository root (see `../README.md`). The tests still run on the host with these steps.
 
 ## Requirements
 
@@ -153,6 +153,7 @@ Migrations run before new code during deploys (`../docs/architecture.md`). Each 
 ## Layout
 
 ```text
+Dockerfile         API image: gunicorn with one worker, no migrate on start
 config/            Django project: settings, root URLconf, WSGI/ASGI
 tracker/
   models.py        User, Company, Application, Interview, Note; constraints and indexes
@@ -173,7 +174,7 @@ pytest.ini         Points pytest-django at config.settings
 These are the behaviors that are easy to miss. `api.md` and the manual have the details.
 
 - **Auth.** The API uses JWT only, with no sessions and no CSRF. Register and login return just `{"access": ...}`, which is valid for 24 hours. There is no refresh token. Emails are lowercased, so `Chris@x.com` and `chris@x.com` are one account.
-- **Throttling.** Register and login each allow 10 requests per minute per client IP, in separate scopes.
+- **Throttling.** Register and login each allow 10 requests per minute per client IP, in separate scopes. The counts live in process memory, so the image runs gunicorn with one worker.
 - **Ownership.** Every queryset is filtered to the signed-in user. Another user's record and a missing record return the same 404, `{"detail": "Not found."}`. Every 404 uses that body, including a page past the end and an unknown route. With `DEBUG=true`, an unknown route shows Django's HTML debug page instead.
 - **Companies.** Application writes send `company_name`. The server trims it, matches it against the user's companies ignoring case, and creates the company only if there is no match. That happens in the same transaction as the application save.
 - **Deletes.** Django's ORM handles cascade and protect. The foreign keys in PostgreSQL have no `ON DELETE` action, so a raw SQL delete of a referenced row fails instead of cascading.
@@ -194,4 +195,4 @@ These are the behaviors that are easy to miss. `api.md` and the manual have the 
 
 ## Not in this phase
 
-There is no Docker or gunicorn (Phase 5), no lint or CI (Phase 6), and no AWS (Phase 7).
+There is no lint or CI (Phase 6), and no AWS (Phase 7).
