@@ -32,7 +32,13 @@ uv pip install -r requirements.txt
 
 `requirements.txt` pins exact versions. `.venv/` is ignored by Git.
 
-To add a dependency, install it, then pin its exact version in `requirements.txt`.
+To also get Ruff, the linter and formatter that CI runs, install `requirements-dev.txt` instead. It includes `requirements.txt`:
+
+```sh
+uv pip install -r requirements-dev.txt
+```
+
+To add a dependency, install it, then pin its exact version in `requirements.txt`. A tool that only checks code, and is not needed to run the API, goes in `requirements-dev.txt`, so it stays out of the API image.
 
 ## 3. Start PostgreSQL
 
@@ -133,12 +139,25 @@ pytest-django creates `test_<POSTGRES_DB>` on the server and drops it when the r
 
 If `pg_isready` is not found, the Postgres.app tools are not on your `PATH` (step 3). Run `/Applications/Postgres.app/Contents/Versions/latest/bin/pg_isready -h localhost` instead.
 
+## 7. Lint and format
+
+CI runs Ruff on every pull request. Settings are in `ruff.toml`: lines up to 120 characters, the Pyflakes and pycodestyle error rules, and no checks on `migrations/`, which Django generates. From `backend/`, with `requirements-dev.txt` installed:
+
+```sh
+ruff check .            # lint
+ruff format --check .   # fail if any file needs formatting
+ruff format .           # rewrite files to match
+```
+
+`ruff check --fix .` fixes the lint findings that have a safe automatic fix. `../docs/Phase6-Docs/P6-INFO.md` describes the whole CI workflow.
+
 ## Useful commands
 
 
 | Command                                                                                  | What it does                                                               |
 | ---------------------------------------------------------------------------------------- | -------------------------------------------------------------------------- |
 | `pytest`                                                                                 | Runs the test suite against Postgres.app. Load `.env` first.               |
+| `ruff check . && ruff format --check .`                                                  | Runs the same lint and format checks as CI.                                |
 | `python manage.py makemigrations`                                                        | Creates a migration after a model change. Commit it with the model change. |
 | `python manage.py makemigrations --check --dry-run`                                      | Fails if a model change has no migration.                                  |
 | `python manage.py migrate`                                                               | Applies migrations.                                                        |
@@ -154,6 +173,8 @@ Migrations run before new code during deploys (`../docs/architecture.md`). Each 
 
 ```text
 Dockerfile         API image: gunicorn with one worker, no migrate on start
+requirements-dev.txt  requirements.txt plus Ruff; CI installs this
+ruff.toml          Ruff lint and format settings
 config/            Django project: settings, root URLconf, WSGI/ASGI
 tracker/
   models.py        User, Company, Application, Interview, Note; constraints and indexes
@@ -195,4 +216,4 @@ These are the behaviors that are easy to miss. `api.md` and the manual have the 
 
 ## Not in this phase
 
-There is no lint or CI (Phase 6), and no AWS (Phase 7).
+There is no AWS (Phase 7) and no deploy from GitHub Actions (Phase 8).

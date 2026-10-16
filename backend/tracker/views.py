@@ -43,9 +43,9 @@ def token_response(user, status_code):
 
 def upcoming_interviews():
     """Interviews still ahead with outcome SCHEDULED, soonest first. Ties go to the lower id."""
-    return Interview.objects.filter(
-        outcome=Outcome.SCHEDULED, scheduled_at__gt=timezone.now()
-    ).order_by("scheduled_at", "id")
+    return Interview.objects.filter(outcome=Outcome.SCHEDULED, scheduled_at__gt=timezone.now()).order_by(
+        "scheduled_at", "id"
+    )
 
 
 # Auth
@@ -237,9 +237,9 @@ class DashboardView(APIView):
         found = {row["status"]: row["n"] for row in rows}
         counts = {s.value: found.get(s.value, 0) for s in Status}
 
-        upcoming = upcoming_interviews().filter(application__user=request.user).select_related(
-            "application__company"
-        )[:10]
+        upcoming = (
+            upcoming_interviews().filter(application__user=request.user).select_related("application__company")[:10]
+        )
         return Response(
             {"counts": counts, "upcoming_interviews": UpcomingInterviewSerializer(upcoming, many=True).data}
         )

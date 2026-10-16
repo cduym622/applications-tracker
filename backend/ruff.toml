@@ -1,0 +1,11 @@
+# Lint and format settings for `ruff check` and `ruff format`. CI runs both.
+line-length = 120
+target-version = "py312"
+# Django generates migrations, so their formatting is not ours to keep.
+extend-exclude = ["*/migrations/*"]
+
+[lint]
+# Pyflakes and the pycodestyle errors that do not overlap the formatter.
+# Listed explicitly so a Ruff upgrade cannot widen the set. RUF012 in newer
+# defaults flags every Django Meta.fields list and DRF permission_classes.
+select = ["E4", "E7", "E9", "F"]

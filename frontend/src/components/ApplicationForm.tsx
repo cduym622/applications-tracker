@@ -46,15 +46,7 @@ function FieldError({ message }: { message?: string }) {
   return message ? <small className="field-error">{message}</small> : null
 }
 
-export default function ApplicationForm({
-  initial,
-  submitLabel,
-  companies,
-  errors,
-  busy,
-  onSubmit,
-  onCancel,
-}: Props) {
+export default function ApplicationForm({ initial, submitLabel, companies, errors, busy, onSubmit, onCancel }: Props) {
   const [values, setValues] = useState(initial)
 
   const set = <K extends keyof ApplicationFormValues>(key: K, value: ApplicationFormValues[K]) =>
