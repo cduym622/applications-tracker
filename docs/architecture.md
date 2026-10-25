@@ -77,13 +77,7 @@ frontend/                React and TypeScript screens
   .prettierrc.json       Prettier settings
 docs/                    PROJECTSPEC.md, PROJECTDESCRIPTION.md, architecture.md,
                          database.md, api.md
-  Phase1-Docs/           P1DOCSCHANGES.md
-  Phase2-Docs/           P2IMPLEMENTATIONMANUAL.md, P2DOCSCHANGES.md
-  Phase3-Docs/           P3IMPLEMENTATIONMANUAL.md, P3DOCSCHANGES.md
-  Phase4-Docs/           P4IMPLEMENTATIONMANUAL.md, P4DOCSCHANGES.md,
-                         P4-CHANGES.md
-  Phase5-Docs/           P5DOCSCHANGES.md, P5-INFO.md
-  Phase6-Docs/           P6DOCSCHANGES.md, P6-INFO.md
+  CHANGES.md             What each phase changed and why
 .github/workflows/
   ci.yml                 CI on each pull request and each push to main
 ```

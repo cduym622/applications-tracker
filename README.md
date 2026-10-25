@@ -120,12 +120,7 @@ frontend/         React and TypeScript screens
   src/api.ts      every API call; maps snake_case responses to camelCase
   src/auth.tsx    JWT in localStorage
 docs/             spec, screen description, architecture, schema, API contract
-  Phase1-Docs/    planning changelog
-  Phase2-Docs/    backend manual and changelog
-  Phase3-Docs/    test manual and changelog
-  Phase4-Docs/    frontend manual, changelog, and change summary
-  Phase5-Docs/    Docker changelog and phase summary
-  Phase6-Docs/    CI changelog and phase summary
+  CHANGES.md      what each phase changed and why
 ```
 
 `backend/README.md` is the API setup on the host, including Postgres.app, the virtualenv, and `.env`. `frontend/README.md` is how to run the screens against that API.
@@ -180,4 +175,4 @@ Run the same checks from the repository root before you push. Ruff needs the bac
 (cd frontend && npm run lint && npm run format:check && npm run build)
 ```
 
-`ruff format .` and `npm run format` rewrite files to match. [docs/Phase6-Docs/P6-INFO.md](docs/Phase6-Docs/P6-INFO.md) explains each job and how to fix a failing one.
+`ruff format .` and `npm run format` rewrite files to match. [docs/CHANGES.md](docs/CHANGES.md) explains why the workflow is built this way.

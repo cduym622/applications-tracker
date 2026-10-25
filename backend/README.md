@@ -1,6 +1,6 @@
 # Backend
 
-Django and Django REST Framework API for the applications tracker. The API contract is in `../docs/api.md`, the schema in `../docs/database.md`, and the Phase 2 decisions in `../docs/Phase2-Docs/P2IMPLEMENTATIONMANUAL.md`. The test suite is described in `../docs/Phase3-Docs/P3IMPLEMENTATIONMANUAL.md`.
+Django and Django REST Framework API for the applications tracker. The API contract is in `../docs/api.md`, and the schema in `../docs/database.md`. `../docs/CHANGES.md` records the backend and test suite decisions.
 
 These steps run the API directly on macOS with a local PostgreSQL. To run the frontend, the API, and PostgreSQL in containers instead, run `docker compose up` from the repository root (see `../README.md`). The tests still run on the host with these steps.
 
@@ -125,7 +125,7 @@ In Swagger UI, click **Authorize** and paste the access token.
 
 ## 6. Run the tests
 
-The suite uses pytest and pytest-django against the same Postgres.app server. `../docs/Phase3-Docs/P3IMPLEMENTATIONMANUAL.md` lists what it covers and why.
+The suite uses pytest and pytest-django against the same Postgres.app server. `../docs/CHANGES.md` explains how the suite is designed.
 
 From `backend/`, confirm the server is up, load the environment, and run pytest:
 
@@ -149,7 +149,7 @@ ruff format --check .   # fail if any file needs formatting
 ruff format .           # rewrite files to match
 ```
 
-`ruff check --fix .` fixes the lint findings that have a safe automatic fix. `../docs/Phase6-Docs/P6-INFO.md` describes the whole CI workflow.
+`ruff check --fix .` fixes the lint findings that have a safe automatic fix. `../docs/CHANGES.md` explains the CI and Ruff choices.
 
 ## Useful commands
 
@@ -192,7 +192,7 @@ pytest.ini         Points pytest-django at config.settings
 
 ## How it behaves
 
-These are the behaviors that are easy to miss. `api.md` and the manual have the details.
+These are the behaviors that are easy to miss. `api.md` and `CHANGES.md` have the details.
 
 - **Auth.** The API uses JWT only, with no sessions and no CSRF. Register and login return just `{"access": ...}`, which is valid for 24 hours. There is no refresh token. Emails are lowercased, so `Chris@x.com` and `chris@x.com` are one account.
 - **Throttling.** Register and login each allow 10 requests per minute per client IP, in separate scopes. The counts live in process memory, so the image runs gunicorn with one worker.

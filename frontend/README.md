@@ -41,11 +41,11 @@ npm run format         # rewrite files to match
 
 ESLint settings are in `eslint.config.js`: the recommended JavaScript and TypeScript rules and the React hooks rules. Type errors are left to `tsc` in `npm run build`. Prettier settings are in `.prettierrc.json`: single quotes, no semicolons, and lines up to 120 characters. `.prettierignore` skips `package-lock.json` and Markdown.
 
-`docs/Phase6-Docs/P6-INFO.md` describes the whole CI workflow.
+`docs/CHANGES.md` explains the CI, ESLint, and Prettier choices.
 
 ## How the client is built
 
-`docs/Phase4-Docs/P4IMPLEMENTATIONMANUAL.md` describes the session, request, error, and paging rules the screens follow.
+`docs/CHANGES.md` describes the session, request, error, and paging rules the screens follow.
 
 ## Run in Docker
 
