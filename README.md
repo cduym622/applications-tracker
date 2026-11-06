@@ -31,7 +31,7 @@ Requirements are in [docs/PROJECTSPEC.md](docs/PROJECTSPEC.md). Screen flow is i
 | 9. Monitoring | CloudWatch logs and metrics, including the result of `GET /api/health/` | Not started. |
 | 10. Break and fix | Cause a database outage and a failed deploy, then fix what breaks | Not started. |
 
-Supporting documents for this project and for each individual phase can be fount in `docs/`
+Supporting documents for this project and for each individual phase can be found in `docs/`
 
 ## Architecture
 
