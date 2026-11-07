@@ -23,7 +23,7 @@ Requirements are in [docs/PROJECTSPEC.md](docs/PROJECTSPEC.md). Screen flow is i
 | 1. Planning | `docs/architecture.md`, `docs/database.md`, `docs/api.md` | Done, 2026-10-09. |
 | 2. Backend | Django REST API and the PostgreSQL schema | Done, 2026-10-10. |
 | 3. Testing | pytest suite against PostgreSQL | Done, 2026-10-11. |
-| 4. Frontend | React screens calling the API | Done, 2016-10-15. |
+| 4. Frontend | React screens calling the API | Done, 2026-10-15. |
 | 5. Docker | `docker compose up` runs the frontend, the API, and PostgreSQL | Done, 2026-10-15. |
 | 6. CI | GitHub Actions on each pull request: install, migrate, test, lint, image build, frontend build | Done, 2026-10-16. |
 | 7. AWS | ECS on Fargate, RDS, ECR, S3, CloudFront | Not started. |
